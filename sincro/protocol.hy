@@ -1,49 +1,9 @@
-(import json socket sincro)
+;; Decodes and encodes messages based on the protocol.
+(import sincro)
 (require sincro.util)
 
-(defclass Connection [object]
-  (defm --init-- [host port &key { "debug" False }]
-    (def self.debug debug)
-    (def self.host host)
-    (def self.port port)
-    (def self.conn (socket.socket socket.AF_INET socket.SOCK_STREAM)))
-
-  (defm --enter-- []
-    (.settimeout self.conn 5)
-    (self.print-debug (.format "Connecting to {}:{}" self.host self.port))
-    (.connect self.conn (, self.host self.port))
-    self)
-
-  (defm --exit-- [&rest args]
-    (try
-      (.shutdown self.conn socket.SHUT_RDWR)
-      (except [] None)
-      (finally
-        (do (self.print-debug "Closing connection")
-            (.close self.conn)))))
-
-  (defm open []
-    (self.--enter--))
-
-  (defm close []
-    (self.--exit--))
-
-  (defm print-debug [msg]
-    (when self.debug (print (+ "[debug] " msg))))
-
-  (defm send [dict]
-    (let [message (json.dumps dict)]
-      (.send self.conn (str.encode (+ message "\r\n")))
-      (self.print-debug (+ "(client) " message))))
-
-  (defm receive []
-    (let [message (.strip (.decode (.recv self.conn 4096) "UTF-8"))]
-      (unless (= message "")
-        (for [l (.splitlines message)]
-          (self.print-debug (+ "(server) " l)))
-        (list (map json.loads (.splitlines message)))))))
-
-
+;; First message expected by the server.
+;; Logs into the server if necessary.
 (defn hello [config]
   (def opts {
     "username" (get config "name")
@@ -54,3 +14,52 @@
     (when password (assoc opts "password" password)))
 
   { "Hello" opts })
+
+;; Communicates a change of settings to the server.
+;; Takes either one or two arguments, depending on the option.
+(defn set [type &rest options]
+  (let [settings
+    (case type
+        ; Sends the current file
+        ; Takes: str
+      { "file"
+        { "file" (first options) }
+
+        ; Changes room
+        ; Takes: str
+        ; Or:    str str
+        "room"
+        { "room" (try-merge { "room" (first options) }
+                            { "password" (get options 1) }) }
+
+        ; Add password to the room?
+        ; Takes: str str
+        "room-password"
+        { "controllerAuth"
+          { "room" (first options)
+            "password" (last options) } }
+
+        ; Set status as ready
+        ; Takes: bool
+        "ready"
+        { "ready"
+          { "isReady" (first options)
+            "manuallyInitiated"
+            (rescue (get options 1) True) } } ; No clue what this is
+
+        ; Send list (presumably) of files
+        ; Takes: [str]
+        "playlist"
+        { "playlistChange"
+          { "files" (first options) } }
+
+        ; Skip to index
+        ; Takes: int
+        "playlist-index"
+        { "playlistIndex"
+          { "index" (first options) } } })]
+
+    { "Set" settings }))
+
+; Helper
+(defn case [type dict] (get dict type))
