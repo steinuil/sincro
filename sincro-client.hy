@@ -1,8 +1,9 @@
 #!/usr/bin/env hy
-(import [sincro [config]])
+(import [sincro [config protocol]])
 
 (defmain [&rest args]
   (let [conf (config.load (cdr args))]
-    (print conf)
-    ; Do stuff
+    (with [conn (protocol.Connection "syncplay.pl" 8995 :debug True)]
+      (.send conn (protocol.hello conf))
+      (.receive conn))
     ))
