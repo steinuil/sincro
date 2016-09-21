@@ -18,7 +18,7 @@
 ;; Communicates a change of settings to the server.
 ;; Takes either one or two arguments, depending on the option.
 (defn set [type &rest options]
-  (let [settings
+  (def settings
     (case type
         ; Sends the current file
         ; Takes: str
@@ -32,7 +32,7 @@
         { "room" (try-merge { "room" (first options) }
                             { "password" (get options 1) }) }
 
-        ; Add password to the room?
+        ; Set room password?
         ; Takes: str str
         "room-password"
         { "controllerAuth"
@@ -47,19 +47,23 @@
             "manuallyInitiated"
             (rescue (get options 1) True) } } ; No clue what this is
 
-        ; Send list (presumably) of files
+        ; Send list of files to be used as playlist
         ; Takes: [str]
         "playlist"
         { "playlistChange"
           { "files" (first options) } }
 
-        ; Skip to index
+        ; Skip to playlist index (0-based?)
         ; Takes: int
         "playlist-index"
         { "playlistIndex"
-          { "index" (first options) } } })]
+          { "index" (first options) } } }))
 
-    { "Set" settings }))
+  { "Set" settings })
 
-; Helper
+;; Communicate error
+(defn error [message]
+  { "Error" { "message" message } })
+
+;; Helper
 (defn case [type dict] (get dict type))

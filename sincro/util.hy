@@ -1,4 +1,6 @@
-(defmacro with-file [file thunk]
+; Returns the result of the passed function
+; applied to the contents of the file
+(defmacro with-input-file [file thunk]
   `(with [f (open ~file)] (~thunk (.read f))))
 
 ; Tries returning the first, falls back to the

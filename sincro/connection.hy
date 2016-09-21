@@ -35,7 +35,7 @@
 
   (defm send [dict]
     (let [message (json.dumps dict)]
-      (.send self.conn (str.encode (+ message "\r\n")))
+      (.send self.conn (.encode (+ message "\r\n")))
       (self.print-debug (+ "(client) " message))))
 
   (defm receive []

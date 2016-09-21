@@ -17,7 +17,7 @@
       (quit (message.fetch "various" "version")))
 
     (let [conf-file (or args.config-path "conf.yaml")]
-      (merge (with-file conf-file yaml.load) args))))
+      (merge (with-input-file conf-file yaml.load) args))))
 
 ;; Merge all options
 ;; First merge the file options with the cli ones,
