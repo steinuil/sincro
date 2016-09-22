@@ -1,46 +1,53 @@
-(import json socket)
+(import json socket [sincro [message]])
 (require sincro.util)
 
-;; Handles the connection. Sends and receives dictionaries.
-;; Can be used in (with) blocks.
-(defclass Connection [object]
+;; Subclasses for mpv and syncplay server connections.
+;; Send a dictionary and receive a list of dictionaries.
+(defclass Syncplay [ConnectionJson]
   (defm --init-- [host port &key { "debug" False }]
-    (def self.debug debug)
-    (def self.host host)
-    (def self.port port)
-    (def self.conn (socket.socket socket.AF_INET socket.SOCK_STREAM)))
+    (def self.debug debug
+         self.host (, host port)
+         self.type "syncplay-connection"
+         self.conn (socket.socket socket.AF_INET socket.SOCK_STREAM))))
 
-  (defm --enter-- []
-    (.settimeout self.conn 5)
-    (self.print-debug (.format "Connecting to {}:{}" self.host self.port))
-    (.connect self.conn (, self.host self.port))
-    self)
+(defclass MPV [ConnectionJson]
+  (defm --init-- [path &key { "debug" False }]
+    (def self.debug debug
+         self.host (, path)
+         self.type "mpv-connection"
+         self.conn (socket.socket socket.AF_UNIX socket.SOCK_STREAM))))
 
-  (defm --exit-- [&rest args]
-    (try
-      (.shutdown self.conn socket.SHUT_RDWR)
-      (except [] None)
-      (finally
-        (do (self.print-debug "Closing connection")
-            (.close self.conn)))))
+;; Generic connection handler.
+;; Meant to be inherited.
+(defclass ConnectionJson [object]
+  [conn None
+   host None
+   type None
+   debug False]
+
+  (defm --enter-- [] (self.open) self)
+  (defm --exit-- [&rest args] (self.close))
 
   (defm open []
-    (self.--enter--))
+    (print (apply .format (tcons (message.fetch self.type "connect") self.host)))
+    (.settimeout self.conn 5)
+    (.connect self.conn self.host))
 
   (defm close []
-    (self.--exit--))
+    (print (message.fetch self.type "disconnect"))
+    (try (.shutdown self.conn socket.SHUT_RDWR)
+      (except [] None))
+    (.close self.conn))
 
-  (defm print-debug [msg]
-    (when self.debug (print (+ "[debug] " msg))))
+  (defm print-debug [sender msg]
+    (when self.debug (print (.format "[debug] ({}) {}" sender msg))))
 
   (defm send [dict]
-    (let [message (json.dumps dict)]
-      (.send self.conn (.encode (+ message "\r\n")))
-      (self.print-debug (+ "(client) " message))))
+    (self.print-debug (message.fetch self.type "to") dict)
+    (.send self.conn (-> (json.dumps dict) (+ "\r\n") (.encode))))
 
   (defm receive []
-    (let [message (.strip (.decode (.recv self.conn 4096) "UTF-8"))]
-      (unless (= message "")
-        (for [l (.splitlines message)]
-          (self.print-debug (+ "(server) " l)))
-        (list (map json.loads (.splitlines message)))))))
+    (def messages (-> (.recv self.conn 4096) (.decode) (.strip) (.splitlines)))
+    (unless (empty? messages)
+      (for [line messages] (self.print-debug (message.fetch self.type "from") line))
+      (list-comp (json.loads line) [line messages]))))

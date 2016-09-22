@@ -19,3 +19,6 @@
 ; Define method
 (defmacro defm [name args &rest body]
   `(defn ~name [self ~@args] ~@body))
+
+(defmacro tcons [a b]
+  `(+ (, ~a) ~b))

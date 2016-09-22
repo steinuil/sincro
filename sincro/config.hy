@@ -17,7 +17,7 @@
       (quit (message.fetch "various" "version")))
 
     (let [conf-file (or args.config-path "conf.yaml")]
-      (merge (with-input-file conf-file yaml.load) args))))
+      (merge (rescue (with-input-file conf-file yaml.load) {}) args))))
 
 ;; Merge all options
 ;; First merge the file options with the cli ones,
@@ -31,7 +31,7 @@
   (let [config default.options]
     (for [key config]
       (try (assoc config key (get file key))
-          (except [] (continue))))
+        (except [] (continue))))
     config))
 
 (defn parse-cli [arguments]

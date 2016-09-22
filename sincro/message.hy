@@ -20,6 +20,18 @@
       "player-args" "Player arguments, prepend with '--' if the options start with '-'"
     }
 
+    "mpv-connection"
+    { "connect" "[mpv] Connecting to {}"
+      "disconnect" "[mpv] Disconnecing"
+      "to" "to mpv"
+      "from" "from mpv" }
+
+    "syncplay-connection"
+    { "connect" "[client] Connecting to {}:{}"
+      "disconnect" "[client] Disconnecting"
+      "to" "client"
+      "from" "server" }
+
     "various"
       { "version" (.format "sincro v{}, based on syncplay v{}" sincro.version sincro.syncplay-version) }
   })

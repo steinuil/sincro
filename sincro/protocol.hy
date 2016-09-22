@@ -29,8 +29,9 @@
         ; Takes: str
         ; Or:    str str
         "room"
-        { "room" (try-merge { "room" (first options) }
-                            { "password" (get options 1) }) }
+        { "room"
+          (try-merge { "room" (first options) }
+                     { "password" (get options 1) }) } ; should be md5 hash
 
         ; Set room password?
         ; Takes: str str
