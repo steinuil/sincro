@@ -27,7 +27,7 @@
       "from" "from mpv" }
 
     "syncplay-connection"
-    { "connect" "[client] Connecting to {}:{}"
+    { "connect" "[client] Connecting to {}"
       "disconnect" "[client] Disconnecting"
       "to" "client"
       "from" "server" }

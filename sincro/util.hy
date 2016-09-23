@@ -20,5 +20,8 @@
 (defmacro defm [name args &rest body]
   `(defn ~name [self ~@args] ~@body))
 
-(defmacro tcons [a b]
-  `(+ (, ~a) ~b))
+(defn tuple? [x]
+  (isinstance x tuple))
+
+(defn join [a divisor]
+  (.join divisor (map str a)))
