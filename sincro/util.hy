@@ -3,13 +3,18 @@
 (defmacro with-input-file [file thunk]
   `(with [f (open ~file)] (~thunk (.read f))))
 
-; Tries returning the first, falls back to the
+; Ignore any errors that a function might raise
+(defmacro ignore [fun]
+  `(try ~fun
+     (except [] None)))
+
+; Try returning the first, fall back to the
 ; second if it fails
 (defmacro rescue [fun default]
   `(try ~fun
      (except [] ~default)))
 
-; Try to merge two dictionaries, only returns
+; Try to merge two dictionaries, only return
 ; first if second throws an exception
 (defmacro try-merge [a b]
   `(let [res ~a]
@@ -22,6 +27,3 @@
 
 (defn tuple? [x]
   (isinstance x tuple))
-
-(defn join [a divisor]
-  (.join divisor (map str a)))

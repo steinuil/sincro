@@ -15,7 +15,7 @@
 
   { "Hello" opts })
 
-;; Communicates a change of settings to the server.
+;; Communicate a change of settings to the server.
 ;; Takes either one or two arguments, depending on the option.
 (defn set [type &rest options]
   (def settings
@@ -62,7 +62,30 @@
 
   { "Set" settings })
 
-;; Communicate error
+;; Communicate a change of state to the server.
+(defn state []
+  (def settings
+    { "ignoringOnTheFly"
+      { "server" 1 }
+      { "client" 1 }
+
+      "playstate"
+      { "position" 0
+        "paused" True
+        "doSeek" True } ; wut
+
+      "ping"
+      { "latencyCalculation" 0
+        "clientRtt" 0
+        "clientLatencyCalculation" 0 }})
+
+  { "State" settings })
+
+;; Request user list.
+(defn users []
+  { "List" None })
+
+;; Communicate error.
 (defn error [message]
   { "Error" { "message" message } })
 

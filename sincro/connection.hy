@@ -1,5 +1,4 @@
 (import json socket [sincro [message]])
-(import [sincro.util [*]])
 (require sincro.util)
 
 ;; Generic connection handler.
@@ -14,14 +13,12 @@
   (defm --exit-- [&rest args] (self.close))
 
   (defm open []
-    (print (.format (message.fetch self.type "connect")
-             (if (tuple? self.host) (join self.host ":") (.decode self.host))))
+    (print (.format (message.fetch self.type "connect") (self.host-string)))
     (.connect self.conn self.host))
 
   (defm close []
     (print (message.fetch self.type "disconnect"))
-    (try (.shutdown self.conn socket.SHUT_RDWR)
-      (except [] None))
+    (ignore (.shutdown self.conn socket.SHUT_RDWR))
     (.close self.conn))
 
   (defm print-debug [sender msg]
@@ -45,11 +42,17 @@
          self.host (, host port)
          self.type "syncplay-connection"
          self.conn (socket.socket socket.AF_INET socket.SOCK_STREAM))
-    (.settimeout self.conn 5)))
+    (.settimeout self.conn 5))
+
+  (defm host-string []
+    (.join ":" (map str self.host))))
 
 (defclass MPV [ConnectionJson]
   (defm --init-- [path &key { "debug" False }]
     (def self.debug debug
          self.host (.encode path)
          self.type "mpv-connection"
-         self.conn (socket.socket socket.AF_UNIX socket.SOCK_STREAM))))
+         self.conn (socket.socket socket.AF_UNIX socket.SOCK_STREAM)))
+
+  (defm host-string []
+    (.decode self.host)))
