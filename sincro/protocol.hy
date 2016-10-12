@@ -2,6 +2,13 @@
 (import sincro)
 (require sincro.util)
 
+(defn case [type dict] (get dict type))
+
+
+;;;
+;;; Client -> Server communication
+;;;
+
 ;; First message expected by the server.
 ;; Logs into the server if necessary.
 (defn hello [config]
@@ -31,7 +38,7 @@
         "room"
         { "room"
           (try-merge { "room" (first options) }
-                     { "password" (get options 1) }) } ; should be md5 hash
+                     { "password" (get options 1) }) } ; TODO hash to md5
 
         ; Set room password?
         ; Takes: str str
@@ -63,11 +70,12 @@
   { "Set" settings })
 
 ;; Communicate a change of state to the server.
+;; TODO document this
 (defn state []
   (def settings
     { "ignoringOnTheFly"
-      { "server" 1 }
-      { "client" 1 }
+      { "server" 1
+        "client" 1 }
 
       "playstate"
       { "position" 0
@@ -89,5 +97,72 @@
 (defn error [message]
   { "Error" { "message" message } })
 
-;; Helper
-(defn case [type dict] (get dict type))
+
+;;;
+;;; Server -> Client communication
+;;;
+
+(def responses
+    ; Response to hello, echoes the sent options
+  { "Hello"
+      ; We only care about the MOTD
+    { "username" 'str
+      "room" { "name" 'str }
+      "realversion" 'str
+      "motd" 'str }
+
+    "Set"
+      ; Name of the room changed
+    [ { "room" { "name" 'str } }
+
+      ; Name of the current user changed (?)
+      { "user" 'str }
+
+      ; Response to request of room password
+      { "controllerAuth"
+        { "success" 'bool
+          "user" 'str
+          "room" 'str } }
+
+      ; Another user set a room password
+      { "newControlledRoom"
+        { "password" 'str
+          "roomName" 'str } }
+
+      ; Another user is ready
+      { "ready"
+        { "username" 'str
+          "isReady" 'bool
+          "manuallyInitiated" 'bool } }
+
+      ; Playlist index changed
+      { "playlistIndex"
+        { "index" 'int
+          "user" 'str } }
+
+      ; Playlist files changed
+      { "playlistChange"
+        { "files" 'str
+          "user" 'str } } ]
+
+    ; List of users
+    "List" 'str
+
+    ; Server playing state
+    "State"
+    { "playstate"
+      { "position" 'int
+        "paused" 'bool
+        "doSeek" '???
+        "setBy" 'str|None }
+
+      "ping"
+      { "latencyCalculation" 'str?
+        "serverRtt" '??? }
+
+      "ignoringOnTheFly"
+      { "server" 'int
+        "client" 'int } }
+
+    ; Error message
+    "Error" { "message" 'str } })
