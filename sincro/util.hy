@@ -14,12 +14,12 @@
   `(try ~fun
      (except [] ~default)))
 
-; Try to merge two dictionaries, only return
-; first if second throws an exception
-(defmacro try-merge [a b]
-  `(let [res ~a]
-     (try (let [o ~b] (for [k o] (assoc res k (get o k))) res)
-       (except [] res))))
+(defn merge [a b]
+  (for [key b]
+    (assoc a key (get b key)))
+  a)
+
+(defn case [type dict] (get dict type))
 
 ; Define method
 (defmacro defm [name args &rest body]

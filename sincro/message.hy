@@ -22,7 +22,7 @@
 
     "mpv-connection"
     { "connect" "[mpv] Connecting to {}"
-      "disconnect" "[mpv] Disconnecing"
+      "disconnect" "[mpv] Disconnecting"
       "to" "to mpv"
       "from" "from mpv" }
 

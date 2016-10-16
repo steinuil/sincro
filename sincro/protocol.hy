@@ -1,8 +1,6 @@
 ;; Decodes and encodes messages based on the protocol.
-(import sincro)
+(import sincro [sincro.util [*]])
 (require sincro.util)
-
-(defn case [type dict] (get dict type))
 
 
 ;;;
@@ -36,9 +34,10 @@
         ; Takes: str
         ; Or:    str str
         "room"
-        { "room"
-          (try-merge { "room" (first options) }
-                     { "password" (get options 1) }) } ; TODO hash to md5
+        (let [room { "room" (first options) }]
+          (rescue
+            (merge room { "password" (get options 1) }) ; TODO hash to md5
+            room))
 
         ; Set room password?
         ; Takes: str str
@@ -70,7 +69,7 @@
   { "Set" settings })
 
 ;; Communicate a change of state to the server.
-;; TODO document this
+;; TODO investigate and document this
 (defn state []
   (def settings
     { "ignoringOnTheFly"
@@ -115,8 +114,13 @@
       ; Name of the room changed
     [ { "room" { "name" 'str } }
 
-      ; Name of the current user changed (?)
-      { "user" 'str }
+      ; Status of user changed
+      ; TODO investigate the event thing
+      { "user"
+        { "name" 'str
+          "room" { "name" 'str }
+          "file" 'str?
+          "event" '??? } }
 
       ; Response to request of room password
       { "controllerAuth"
