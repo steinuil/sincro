@@ -1,5 +1,5 @@
 (import json socket [sincro [message]])
-(require sincro.util)
+(require [sincro.util [*]])
 
 ;; Generic connection handler.
 ;; Meant to be inherited.
@@ -29,6 +29,7 @@
     (.send self.conn (-> (json.dumps dict) (+ "\r\n") (.encode))))
 
   (defm receive []
+    (print self)
     (def messages (-> (.recv self.conn 4096) (.decode) (.strip) (.splitlines)))
     (unless (empty? messages)
       (for [line messages] (self.print-debug (message.fetch self.type "from") line))

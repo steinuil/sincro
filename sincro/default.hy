@@ -12,4 +12,4 @@
     "password" None
     "player-path" "mpv"
     "player-args" []
-    "debug" false })
+    "debug" False })

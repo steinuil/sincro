@@ -1,5 +1,5 @@
 (import [sincro.util [*]])
-(require sincro.util)
+(require [sincro.util [*]])
 
 (defn fetch [property]
   { "command" [ "get_property" property ] })

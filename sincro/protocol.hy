@@ -1,6 +1,7 @@
 ;; Decodes and encodes messages based on the protocol.
-(import sincro [sincro.util [*]])
-(require sincro.util)
+(import sincro
+        [sincro.util [*]])
+(require [sincro.util [*]])
 
 
 ;;;
@@ -14,9 +15,8 @@
     "username" (get config "name")
     "room" { "name" (get config "room") }
     "realversion" sincro.syncplay-version })
-
-  (let [password (get config "password")]
-    (when password (assoc opts "password" password)))
+  (def password (get config "password"))
+  (when password (assoc opts "password" password))
 
   { "Hello" opts })
 
@@ -25,43 +25,44 @@
 (defn set [type &rest options]
   (def settings
     (case type
-        ; Sends the current file
-        ; Takes: str
+        ;; Sends the current file
+        ;; Takes: str
       { "file"
         { "file" (first options) }
 
-        ; Changes room
-        ; Takes: str
-        ; Or:    str str
+        ;; Changes room
+        ;; Takes: str
+        ;; Or:    str str
         "room"
-        (let [room { "room" (first options) }]
+        (do
+          (def room { "room" (first options) })
           (rescue
             (merge room { "password" (get options 1) }) ; TODO hash to md5
             room))
 
-        ; Set room password?
-        ; Takes: str str
+        ;; Set room password?
+        ;; Takes: str str
         "room-password"
         { "controllerAuth"
           { "room" (first options)
-            "password" (last options) } }
+            "password" (rescue (get options 1) "") } }
 
-        ; Set status as ready
-        ; Takes: bool
+        ;; Set status as ready
+        ;; Takes: bool
         "ready"
         { "ready"
           { "isReady" (first options)
             "manuallyInitiated"
             (rescue (get options 1) True) } } ; No clue what this is
 
-        ; Send list of files to be used as playlist
-        ; Takes: [str]
+        ;; Send list of files to be used as playlist
+        ;; Takes: [str]
         "playlist"
         { "playlistChange"
           { "files" (first options) } }
 
-        ; Skip to playlist index (0-based?)
-        ; Takes: int
+        ;; Skip to playlist index (0-based?)
+        ;; Takes: int
         "playlist-index"
         { "playlistIndex"
           { "index" (first options) } } }))
@@ -102,57 +103,57 @@
 ;;;
 
 (def responses
-    ; Response to hello, echoes the sent options
+    ;; Response to hello, echoes the sent options
   { "Hello"
-      ; We only care about the MOTD
+      ;; We only care about the MOTD
     { "username" 'str
       "room" { "name" 'str }
       "realversion" 'str
       "motd" 'str }
 
     "Set"
-      ; Name of the room changed
+      ;; Name of the room changed
     [ { "room" { "name" 'str } }
 
-      ; Status of user changed
-      ; TODO investigate the event thing
+      ;; Status of user changed
+      ;; TODO investigate the event thing
       { "user"
         { "name" 'str
           "room" { "name" 'str }
           "file" 'str?
           "event" '??? } }
 
-      ; Response to request of room password
+      ;; Response to request of room password
       { "controllerAuth"
         { "success" 'bool
           "user" 'str
           "room" 'str } }
 
-      ; Another user set a room password
+      ;; Another user set a room password
       { "newControlledRoom"
         { "password" 'str
           "roomName" 'str } }
 
-      ; Another user is ready
+      ;; Another user is ready
       { "ready"
         { "username" 'str
           "isReady" 'bool
           "manuallyInitiated" 'bool } }
 
-      ; Playlist index changed
+      ;; Playlist index changed
       { "playlistIndex"
         { "index" 'int
           "user" 'str } }
 
-      ; Playlist files changed
+      ;; Playlist files changed
       { "playlistChange"
         { "files" 'str
           "user" 'str } } ]
 
-    ; List of users
+    ;; List of users
     "List" 'str
 
-    ; Server playing state
+    ;; Server playing state
     "State"
     { "playstate"
       { "position" 'int
@@ -168,5 +169,5 @@
       { "server" 'int
         "client" 'int } }
 
-    ; Error message
+    ;; Error message
     "Error" { "message" 'str } })
