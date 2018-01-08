@@ -11,5 +11,7 @@
     "port" 8995
     "password" None
     "player-path" "mpv"
-    "player-args" []
-    "debug" False })
+    "player-args" [] })
+
+
+(def config-path "conf.yaml")

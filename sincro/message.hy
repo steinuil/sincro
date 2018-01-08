@@ -1,8 +1,12 @@
 (import sincro)
 
-(defn fetch [type name]
-  (get (get messages type) name))
 
+(defn fetch [section name]
+  (get messages section name))
+
+
+;; IMPORTANT: Messages with format arguments should always use named placeholders,
+;; so that they can be used as keyword arguments when formatting with the Logger.
 (def messages
   { "argument"
     { "description" "Synchronize the playback of multiple players over the network"
@@ -21,17 +25,17 @@
     }
 
     "mpv-connection"
-    { "connect" "[mpv] Connecting to {}"
-      "disconnect" "[mpv] Disconnecting"
+    { "connect" "Connecting to {server}"
+      "disconnect" "Disconnecting"
       "to" "to mpv"
       "from" "from mpv" }
 
     "syncplay-connection"
-    { "connect" "[client] Connecting to {}"
-      "disconnect" "[client] Disconnecting"
+    { "connect" "Connecting to {server}"
+      "disconnect" "Disconnecting"
       "to" "client"
       "from" "server" }
 
     "various"
-      { "version" (.format "sincro v{}, based on syncplay v{}" sincro.version sincro.syncplay-version) }
+      { "version" (.format "sincro v{}, based on syncplay v{}" sincro.version sincro.syncplay-mimic-version) }
   })

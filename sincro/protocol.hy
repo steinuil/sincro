@@ -11,11 +11,10 @@
 ;; First message expected by the server.
 ;; Logs into the server if necessary.
 (defn hello [config]
-  (def opts {
-    "username" (get config "name")
-    "room" { "name" (get config "room") }
-    "realversion" sincro.syncplay-version })
-  (def password (get config "password"))
+  (setv opts { "username" (get config "name")
+               "room" { "name" (get config "room") }
+               "realversion" sincro.syncplay-mimic-version }
+        password (get config "password"))
   (when password (assoc opts "password" password))
 
   { "Hello" opts })
@@ -36,16 +35,15 @@
         "room"
         (do
           (def room { "room" (first options) })
-          (rescue
-            (merge room { "password" (get options 1) }) ; TODO hash to md5
-            room))
+          (rescue-with room
+            (merge room { "password" (get options 1) }))) ; TODO hash to md5
 
         ;; Set room password?
         ;; Takes: str str
         "room-password"
         { "controllerAuth"
           { "room" (first options)
-            "password" (rescue (get options 1) "") } }
+            "password" (rescue-with "" (get options 1)) } }
 
         ;; Set status as ready
         ;; Takes: bool
@@ -53,7 +51,7 @@
         { "ready"
           { "isReady" (first options)
             "manuallyInitiated"
-            (rescue (get options 1) True) } } ; No clue what this is
+            (rescue-with True (get options 1)) } } ; No clue what this is
 
         ;; Send list of files to be used as playlist
         ;; Takes: [str]

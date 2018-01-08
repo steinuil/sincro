@@ -1,3 +1,2 @@
-(def
-  version "0.1"
-  syncplay-version "1.4.0")
+(setv version "0.1"
+      syncplay-mimic-version "1.5.1")
