@@ -1,5 +1,5 @@
 ;; Decodes and encodes messages based on the protocol.
-(import sincro hashlib random)
+(import sincro hashlib random time)
 (require [sincro.util [*]])
 
 
@@ -42,9 +42,8 @@
     (n) (n)))
 
 
-;; Requesting a controlled room will return that room's name
-;; in the format +<name>:<hash> where <hash> is the uppercased first 12
-;; chars of a hash generated with the room name, the server salt and password.
+;; Requesting a controlled room of name <name> will put you in a room
+;; named +<name>:<hash> and give you back the password to invite other OPs.
 (defn request-controlled-room [room]
   "Request a new controlled room"
   { "Set" { "controllerAuth" { "room" room "password" (gen-room-password) } } })
@@ -86,6 +85,46 @@
   { "Chat" msg })
 
 
+;; This is really not necessary.
+(defclass PingCalculator [object]
+  "Keeps track of the last ping and of the
+  exponentially weighted moving average (EWMA) of all the pings"
+  [*warmup*    10   ; samples to collect before seeding the EWMA
+   ;; The decay factor, or alpha, which determines how much sudden spikes
+   ;; in the values affect the average.
+   ;; A factor close to 0 is more sensible, close to 1 is more sturdy.
+   *decay*     0.7
+   samples     0     ; total number of samples
+   average-rtt []
+   last-rtt    None
+   last-forward-delay None]
+
+  (defm add [timestamp sender-rtt]
+    (setv rtt (- (time.time) timestamp)
+          self.last-rtt rtt
+          self.samples (inc self.samples))
+    ;; Append the values to a list until we have enough samples,
+    ;; then swap out the list with its average and start calculating the EWMA.
+    (if (> self.samples self.*warmup*)
+        (setv self.average-rtt (+ (* rtt self.*decay*)
+                                  (* rtt (- 1 self.*decay*))))
+      (do (.append self.average-rtt rtt)
+        (when (= self.samples self.*warmup*)
+          (setv self.average-rtt (/ (sum self.average-rtt) self.*warmup*)))))
+    (setv self.last-forward-delay
+          (if (< sender-rtt rtt)
+            (+ (/ (self.average) 2)
+               (- rtt sender-rtt))
+            (/ (self.average) 2))))
+
+  (defm average []
+    "Return the average ping"
+    (if (< self.samples self.*warmup*)
+      ;; Return a simple average until we're warmed up
+      (/ (sum self.average-rtt) (len self.average-rtt))
+      self.average-rtt)))
+
+
 ;; IgnoringOnTheFly seems to be some kind of locking mechanism,
 ;; where the server won't send any seeks until the client has ACKed
 ;; the previous by sending back to the server the current server IOTF status.
@@ -99,16 +138,19 @@
 (setv *ignored-server-seeks* 0)
 
 
+(def ping (PingCalculator))
+
+
 (defn send-player-state
-  [&kwonly [position 0] [paused? False] [seeked? False] latency rtt]
+  [&kwonly [position 0] [paused False] [seeked False]]
   ""
   (setv state
     { "playstate" { "position" position
-                    "paused" paused?
-                    "doSeek" seeked? }
+                    "paused" paused
+                    "doSeek" seeked }
       ; There's also a key called "latencyCalculation", but it's never used.
-      "ping" { "clientLatencyCalculation" latency
-               "clientRtt" rtt } })
+      "ping" { "clientLatencyCalculation" (time.time)
+               "clientRtt" ping.last-rtt } })
   (when (> *ignored-server-seeks* 0)
     (assoc state "ignoringOnTheFly" { "server" *ignored-server-seeks* }))
   { "State" state })

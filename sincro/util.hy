@@ -21,6 +21,11 @@
   `(defn ~name [self ~@args] ~@body))
 
 
+(defmacro get-with-default [dict default &rest keys]
+  `(try (get ~dict ~@keys)
+     (except [[KeyError IndexError]] ~default)))
+
+
 (defn dget [dict key &key {"default" None}]
   "Like `get` but returns None or the supplied value on failure"
   (try (get dict key)
