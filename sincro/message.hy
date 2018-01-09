@@ -13,7 +13,7 @@
       "epilog" "If no arguments are supplied, the default config values will be used"
       "server" "Server name or address"
       "port" "Server port"
-      "password" "Room password"
+      "server-password" "Server password"
       "name" "Desired username"
       "room" "Desired room"
       "config-path" "Override path to the config file"

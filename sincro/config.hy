@@ -45,8 +45,8 @@
     :metavar "address" :type str :help (msg "server"))
   (argument "--port"
     :metavar "number" :type int :help (msg "port"))
-  (argument "-p" "--password"
-    :metavar "password" :type str :help (msg "password"))
+  (argument "-p" "--server-password"
+    :metavar "server-password" :type str :help (msg "server-password"))
 
   (argument "-n" "--name"
     :metavar "username" :type str :help (msg "name"))

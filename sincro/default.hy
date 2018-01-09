@@ -9,7 +9,7 @@
     "room" "default-room"
     "server" "syncplay.pl"
     "port" 8995
-    "password" None
+    "server-password" None
     "player-path" "mpv"
     "player-args" [] })
 

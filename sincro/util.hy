@@ -35,8 +35,5 @@
   dest)
 
 
-(defn case [key dict] (get dict key))
-
-
 (defn tuple? [x]
   (isinstance x tuple))
