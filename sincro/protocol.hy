@@ -32,22 +32,6 @@
   { "Set" { "room" { "name" name } } })
 
 
-;; Ok, so this would be a good place to talk about Syncplay security.
-;; The protocol is not encrypted, the server password is only hashed to md5
-;; when sent over the wire, and for some reason the room password is only
-;; accepted when it's in a very specific format, which basically makes it
-;; about as secure as a 4 characters password.
-;; All the places where they could've used something like secrets, they just
-;; used random.
-;; The holy grail of syncplay security though is found in the controlled room
-;; name generator, which sha256 hashes the salt (which is *global* to the server),
-;; then sha256 hashes the room name + hashed salt, and finally takes the first
-;; 12 characters of the sha1 hash of the previous hash + hashed salt + the
-;; room password.
-;; Because clearly the solution to all security problems is to add more hashes
-;; and salt.
-
-
 ;; Syncplay not using 'secrets' doesn't mean we're excused for not doing it.
 (defn gen-room-password []
   "Generate a random room password in the format AA-000-000"
@@ -140,17 +124,8 @@
       self.average-rtt)))
 
 
-;; IgnoringOnTheFly seems to be some kind of locking mechanism,
-;; where the server won't send any seeks until the client has ACKed
-;; the previous by sending back to the server the current server IOTF status.
-;; The same happens for the client: if the client sends a seek to the server,
-;; it will increase its local IOTF status and not send any seeks until
-;; the server has acknowledged it.
-;;
-;; It's kind of unnecessary, since the protocol is built on top of TCP
-;; which should be ordered and reliable in the first place,
-;; so we play along with the server and completely ignore the client part.
-(setv *ignored-server-seeks* 0)
+;; Play along with the server's ignoringOnTheFly mechanism.
+(setv *server-keep-alive* 0)
 
 
 (def ping (PingCalculator))
@@ -166,30 +141,27 @@
       ; There's also a key called "latencyCalculation", but it's never used.
       "ping" { "clientLatencyCalculation" (time.time)
                "clientRtt" ping.last-rtt } })
-  (global *ignored-server-seeks*)
-  (when (> *ignored-server-seeks* 0)
-    (assoc state "ignoringOnTheFly" { "server" *ignored-server-seeks* })
-    (setv *ignored-server-seeks* 0))
+  (global *server-keep-alive*)
+  (when (> *server-keep-alive* 0)
+    (assoc state "ignoringOnTheFly" { "server" *server-keep-alive* })
+    (setv *server-keep-alive* 0))
   { "State" state })
 
 
-;;;
-;;; Server -> Client communication
-;;;
-
+;; Response handler
 (defn make-handler [&kwonly hello set list state error chat]
   "Takes handler functions for all possible server responses
   and returns a handler function that handles all responses"
 
   (defn handle-state [msg]
-    ;; Handle ping and server ignoring stuff locally
+    ;; Handle ping and keep-alive stuff locally
     (setv server-ping (get-with-default msg None "ping")
-          server-ignored (get-with-default msg None "ignoringOnTheFly" "server"))
+          keepalive (get-with-default msg None "ignoringOnTheFly" "server"))
     (when server-ping
       (ping.add (get server-ping "latencyCalculation") (get server-ping "serverRtt")))
-    (when server-ignored
-      (global *ignored-server-seeks*)
-      (setv *ignored-server-seeks* server-ignored))
+    (when keepalive
+      (global *server-keep-alive*)
+      (setv *server-keep-alive* keepalive))
     ;; Let the state handler do the rest
     (state msg))
 

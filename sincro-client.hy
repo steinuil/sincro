@@ -1,20 +1,53 @@
 #!/usr/bin/env hy
-(import [sincro [config connection protocol]])
+(import [sincro [config logger connection protocol]]
+        sys)
 (require [sincro.util [*]])
 
 
+(setv log (logger.Logger "syncplay-handler"))
+
+
+(defn handle-hello [msg]
+  (setv motd (get-with-default msg None "motd"))
+  (if motd
+    (print motd)
+    (log.warning "property-not-found" :property "motd")))
+
+
+(defn print-chat-msg [msg]
+  (try (do (setv message (get msg "message")
+                 name (get msg "username"))
+           (print (.format "<{}> {}" message name)))
+    (except [e KeyError]
+      (log.warning "property-not-found" :property (get e.args 0)))))
+
+
+(defn handle-list [msg]
+  (setv users [])
+  (for [rooms msg]
+    (for [(, room user) (.items rooms)]
+      (.append users (get user "username"))))
+  (print users))
+
+
+(defn quit-with-error [msg]
+  (setv err (get-with-default msg None "message"))
+  (log.error "server-error" :message err)
+  (sys.exit 1))
+
+
 (setv syncplay-resp-handler
-      (protocol.make-handler :hello (fn [x] None)
-                             :set   (fn [x] None)
-                             :list  (fn [x] None)
-                             :state (fn [x] None)
-                             :error (fn [x] None)
-                             :chat  (fn [x] None)))
+  (protocol.make-handler
+    :hello handle-hello
+    :set   (fn [x] None)
+    :state (fn [x] None)
+    :list  handle-list
+    :chat  print-chat-msg
+    :error quit-with-error))
 
 
 (defn handle [p]
-  (for [msg p]
-    (syncplay-resp-handler msg)))
+  (for [msg p] (syncplay-resp-handler msg)))
 
 
 ;(defn handle-mpv-event [ev]
@@ -23,9 +56,9 @@
 
 
 (defn setup-mpv [conn]
-  (.send conn { "command" [ "observe_property" "filename" ] })
-  (.send conn { "command" [ "observe_property" "duration" ] })
-  (.send conn { "command" [ "observe_property" "file-size" ] }))
+  (.send conn { "command" [ "observe_property" "filename" ] }
+              { "command" [ "observe_property" "duration" ] }
+              { "command" [ "observe_property" "file-size" ] }))
 
 
 (defmain [&rest args]
@@ -48,5 +81,5 @@
     (handle (.receive conn))
     (.send conn (protocol.send-player-state :position None))
     (handle (.receive conn))
-    (print (protocol.ping.average))
+    (print "Average ping:" (protocol.ping.average))
   ))

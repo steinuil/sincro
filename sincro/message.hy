@@ -7,7 +7,7 @@
 
 ;; IMPORTANT: Messages with format arguments should always use named placeholders,
 ;; so that they can be used as keyword arguments when formatting with the Logger.
-(def messages
+(setv messages
   { "argument"
     { "description" "Synchronize the playback of multiple players over the network"
       "epilog" "If no arguments are supplied, the default config values will be used"
@@ -21,8 +21,7 @@
       "version" "Print version and quit"
       "file" "File to be played"
       "player-path" "Path to the player executable"
-      "player-args" "Player arguments, prepend with '--' if the options start with '-'"
-    }
+      "player-args" "Player arguments, prepend with '--' if the options start with '-'" }
 
     "mpv-connection"
     { "connect" "Connecting to {server}"
@@ -38,7 +37,8 @@
 
     "syncplay-handler"
     { "unknown-command" "Don't know how to handle command {command}"
-    }
+      "property-not-found" "Expected property \"{property}\" not found"
+      "server-error" "Server returned error: {message}" }
 
     "various"
       { "version" (.format "sincro v{}, based on syncplay v{}" sincro.version sincro.syncplay-mimic-version) }

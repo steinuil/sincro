@@ -1,4 +1,4 @@
-(import json socket [sincro [message logger]])
+(import [sincro [message logger]] json socket)
 (require [sincro.util [*]])
 
 

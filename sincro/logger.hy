@@ -19,7 +19,9 @@
   (defm __log [t msg rst fmt]
     (print t (vformat (message.fetch self.section msg) fmt) (.join " " (map str rst))))
 
-  (defm debug   [msg &rest rst &kwargs fmt] (self.__log "[debug]"   msg rst fmt))
+  (defm debug   [msg &rest rst &kwargs fmt]
+    ;(self.__log "[debug]"   msg rst fmt))
+    None)
   (defm info    [msg &rest rst &kwargs fmt] (self.__log "[info]"    msg rst fmt))
   (defm warning [msg &rest rst &kwargs fmt] (self.__log "[warning]" msg rst fmt))
   (defm error   [msg &rest rst &kwargs fmt] (self.__log "[error]"   msg rst fmt)))
