@@ -3,15 +3,29 @@
 (require [sincro.util [*]])
 
 
-(defn handle [p]
-  (for [payload p]
-    (when (in "State" payload)
-      (setv ping (get payload "State" "ping"))
-      (protocol.ping.add (get ping "latencyCalculation") (get ping "serverRtt"))
+(setv syncplay-resp-handler
+      (protocol.make-handler :hello (fn [x] None)
+                             :set   (fn [x] None)
+                             :list  (fn [x] None)
+                             :state (fn [x] None)
+                             :error (fn [x] None)
+                             :chat  (fn [x] None)))
 
-      (setv server-ignore (get-with-default payload None "State" "ignoringOnTheFly" "server"))
-      (when server-ignore
-        (setv protocol.*ignored-server-seeks* server-ignore)))))
+
+(defn handle [p]
+  (for [msg p]
+    (syncplay-resp-handler msg)))
+
+
+;(defn handle-mpv-event [ev]
+;  (setv name (get ev "event"))
+;  (cond [(= ev "start-file")]))
+
+
+(defn setup-mpv [conn]
+  (.send conn { "command" [ "observe_property" "filename" ] })
+  (.send conn { "command" [ "observe_property" "duration" ] })
+  (.send conn { "command" [ "observe_property" "file-size" ] }))
 
 
 (defmain [&rest args]

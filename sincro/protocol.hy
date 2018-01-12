@@ -1,5 +1,6 @@
 ;; Decodes and encodes messages based on the protocol.
-(import sincro hashlib random time)
+(import [sincro [logger]]
+        sincro hashlib secrets time)
 (require [sincro.util [*]])
 
 
@@ -11,9 +12,7 @@
                "room" { "name" room }
                "realversion" sincro.syncplay-mimic-version })
   (when server-password
-    ; Top security
     (assoc opts "password" (.hexdigest (hashlib.md5 server-password))))
-
   { "Hello" opts })
 
 
@@ -33,13 +32,29 @@
   { "Set" { "room" { "name" name } } })
 
 
-;; Security ahoy
+;; Ok, so this would be a good place to talk about Syncplay security.
+;; The protocol is not encrypted, the server password is only hashed to md5
+;; when sent over the wire, and for some reason the room password is only
+;; accepted when it's in a very specific format, which basically makes it
+;; about as secure as a 4 characters password.
+;; All the places where they could've used something like secrets, they just
+;; used random.
+;; The holy grail of syncplay security though is found in the controlled room
+;; name generator, which sha256 hashes the salt (which is *global* to the server),
+;; then sha256 hashes the room name + hashed salt, and finally takes the first
+;; 12 characters of the sha1 hash of the previous hash + hashed salt + the
+;; room password.
+;; Because clearly the solution to all security problems is to add more hashes
+;; and salt.
+
+
+;; Syncplay not using 'secrets' doesn't mean we're excused for not doing it.
 (defn gen-room-password []
   "Generate a random room password in the format AA-000-000"
-  (defn n [] (random.randrange 1000))
+  (defn n [x] (secrets.randbelow (inc x)))
   (.format "{}-{:03d}-{:03d}"
-    (.join "" (map chr (random.sample (range 65 90) 2)))
-    (n) (n)))
+    (.join "" (map (fn [_] (chr (+ 65 (n 25)))) (range 2)))
+    (n 999) (n 999)))
 
 
 ;; Requesting a controlled room of name <name> will put you in a room
@@ -52,7 +67,7 @@
 (defn manage-room [room password]
   "Log in as OP of a controlled room
   If 'room' is none log into the current room"
-  { "Set" { "controllerAuth" { "room" room "password" p } } })
+  { "Set" { "controllerAuth" { "room" room "password" password } } })
 
 
 (defn set-ready [ready &optional [manual? True]]
@@ -101,8 +116,8 @@
 
   (defm add [timestamp sender-rtt]
     (setv rtt (- (time.time) timestamp)
-          self.last-rtt rtt
-          self.samples (inc self.samples))
+          self.last-rtt rtt)
+    (incv self.samples)
     ;; Append the values to a list until we have enough samples,
     ;; then swap out the list with its average and start calculating the EWMA.
     (if (> self.samples self.*warmup*)
@@ -151,8 +166,10 @@
       ; There's also a key called "latencyCalculation", but it's never used.
       "ping" { "clientLatencyCalculation" (time.time)
                "clientRtt" ping.last-rtt } })
+  (global *ignored-server-seeks*)
   (when (> *ignored-server-seeks* 0)
-    (assoc state "ignoringOnTheFly" { "server" *ignored-server-seeks* }))
+    (assoc state "ignoringOnTheFly" { "server" *ignored-server-seeks* })
+    (setv *ignored-server-seeks* 0))
   { "State" state })
 
 
@@ -160,77 +177,31 @@
 ;;; Server -> Client communication
 ;;;
 
-(def responses
-    ;; Response to hello, echoes the sent options
-  { "Hello"
-      ;; We only care about the MOTD
-    { "username" 'str
-      "room" { "name" 'str }
-      "realversion" 'str
-      "motd" 'str
-      "features" [ 'str ] }
+(defn make-handler [&kwonly hello set list state error chat]
+  "Takes handler functions for all possible server responses
+  and returns a handler function that handles all responses"
 
-    "Set"
-      ;; Name of the room changed
-    [ { "room" { "name" 'str } }
+  (defn handle-state [msg]
+    ;; Handle ping and server ignoring stuff locally
+    (setv server-ping (get-with-default msg None "ping")
+          server-ignored (get-with-default msg None "ignoringOnTheFly" "server"))
+    (when server-ping
+      (ping.add (get server-ping "latencyCalculation") (get server-ping "serverRtt")))
+    (when server-ignored
+      (global *ignored-server-seeks*)
+      (setv *ignored-server-seeks* server-ignored))
+    ;; Let the state handler do the rest
+    (state msg))
 
-      ;; Status of user changed
-      ;; TODO investigate the event thing
-      { "user"
-        { "name" 'str
-          "room" { "name" 'str }
-          "file" 'str?
-          "event" '??? } }
-
-      ;; Response to request of room password
-      { "controllerAuth"
-        { "success" 'bool
-          "user" 'str
-          "room" 'str } }
-
-      ;; Another user set a room password
-      { "newControlledRoom"
-        { "password" 'str
-          "roomName" 'str } }
-
-      ;; Another user is ready
-      { "ready"
-        { "username" 'str
-          "isReady" 'bool
-          "manuallyInitiated" 'bool } }
-
-      ;; Playlist index changed
-      { "playlistIndex"
-        { "index" 'int
-          "user" 'str } }
-
-      ;; Playlist files changed
-      { "playlistChange"
-        { "files" 'str
-          "user" 'str } } ]
-
-    ;; List of users
-    "List" 'str
-
-    ;; Server playing state
-    "State"
-    { "playstate"
-      { "position" 'int
-        "paused" 'bool
-        "doSeek" '???
-        "setBy" 'str|None }
-
-      "ping"
-      { "latencyCalculation" 'str?
-        "serverRtt" '??? }
-
-      "ignoringOnTheFly"
-      { "server" 'int
-        "client" 'int } }
-
-    ;; Error message
-    "Error" { "message" 'str }
-
-    ;; Chat message
-    "Chat" {}
-    })
+  (setv log (logger.Logger "syncplay-handler")
+        handlers { "Hello" hello
+                   "Set" set
+                   "List" list
+                   "State" handle-state
+                   "Error" error
+                   "Chat" chat })
+  (fn [msg]
+    (for [(, cmd args) (.items msg)]
+      (try ((get handlers cmd) args)
+        (except [KeyError]
+          (log.warning "unknown-command" :command cmd))))))

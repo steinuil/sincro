@@ -7,6 +7,7 @@
   Meant to be inherited."
   [conn None
    host None
+   separator None
    log None]
 
   ;; Make sure "with" works correctly
@@ -23,12 +24,19 @@
       (.shutdown self.conn socket.SHUT_RDWR))
     (.close self.conn))
 
-  (defm send [dict]
-    "Encode messages to JSON and send them"
-    (self.log.debug "to" dict)
-    (.send self.conn (-> (json.dumps dict)
-                         (+ "\r\n")
-                         (.encode))))
+  (defm send* [msgs]
+    "Encode a list of messages to JSON and send them"
+    (unless (empty? msgs)
+      (for [msg msgs]
+        (self.log.debug "to" msg))
+      (.send self.conn
+        (->> (list-comp (+ (json.dumps msg) self.separator) [msg msgs])
+             (.join "")
+             (.encode)))))
+
+  (defm send [&rest msgs]
+    "Like send*, but takes variadic arguments"
+    (self.send* (list msgs)))
 
   (defm host-string []
     "The stringified host"
@@ -52,6 +60,7 @@
   (defm --init-- [host port]
     (setv self.host (, host port)
           self.log (logger.Logger "syncplay-connection")
+          self.separator "\r\n"
           self.conn (socket.socket socket.AF_INET socket.SOCK_STREAM))
     (.settimeout self.conn 5))
 
@@ -59,10 +68,11 @@
     (.join ":" (map str self.host))))
 
 
-(defclass MPV [ConnectionJson]
+(defclass Mpv [ConnectionJson]
   (defm --init-- [path]
     (setv self.host (.encode path)
           self.log (logger.Logger "mpv-connection")
+          self.separator "\n"
           self.conn (socket.socket socket.AF_UNIX socket.SOCK_STREAM)))
 
   (defm host-string []

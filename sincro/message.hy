@@ -36,6 +36,10 @@
       "to" "client"
       "from" "server" }
 
+    "syncplay-handler"
+    { "unknown-command" "Don't know how to handle command {command}"
+    }
+
     "various"
       { "version" (.format "sincro v{}, based on syncplay v{}" sincro.version sincro.syncplay-mimic-version) }
   })

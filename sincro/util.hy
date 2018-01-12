@@ -21,6 +21,10 @@
   `(defn ~name [self ~@args] ~@body))
 
 
+(defmacro incv [var] `(setv ~var (inc ~var)))
+(defmacro decv [var] `(setv ~var (dec ~var)))
+
+
 (defmacro get-with-default [dict default &rest keys]
   `(try (get ~dict ~@keys)
      (except [[KeyError IndexError]] ~default)))
