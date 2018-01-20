@@ -1,11 +1,3 @@
-;; Returns the result of the passed function
-;; applied to the contents of the file
-(defmacro with-input-file [file fun]
-  (setv f (gensym))
-  `(with [~f (open ~file)]
-     (~fun (.read ~f))))
-
-
 ;; Ignore any exceptions raised from inside the body
 (defmacro ignore-exceptions [&rest body]
   `(try (do ~@body) (except [] None)))
@@ -30,10 +22,9 @@
      (except [[KeyError IndexError]] ~default)))
 
 
-(defn dget [dict key &key {"default" None}]
-  "Like `get` but returns None or the supplied value on failure"
-  (try (get dict key)
-    (except [[KeyError IndexError]] default)))
+(defmacro safe-get [indexable &rest keys]
+  `(try (get ~indexable ~@keys)
+     (except [[KeyError IndexError]] None)))
 
 
 (defn merge-dicts [dest source]

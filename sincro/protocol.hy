@@ -155,8 +155,8 @@
 
   (defn handle-state [msg]
     ;; Handle ping and keep-alive stuff locally
-    (setv server-ping (get-with-default msg None "ping")
-          keepalive (get-with-default msg None "ignoringOnTheFly" "server"))
+    (setv server-ping (safe-get msg "ping")
+          keepalive (safe-get msg "ignoringOnTheFly" "server"))
     (when server-ping
       (ping.add (get server-ping "latencyCalculation") (get server-ping "serverRtt")))
     (when keepalive

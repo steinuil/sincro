@@ -6,8 +6,7 @@
 ;; cli overrides file, file overrides defaults.
 ;; Unrecognized file options are simply discarded.
 
-(import [sincro [default message]]
-        [sincro.util [dget]]
+(import [sincro [default message logger]]
         argparse yaml)
 (require [sincro.util [*]])
 
@@ -17,15 +16,17 @@
   (setv cli (parse-cli cli-args))
   (when cli.version
     (quit (message.fetch "various" "version")))
+  (when cli.loglevel
+    (logger.set-level cli.loglevel))
 
   (setv config-path (or cli.config-path default.config-path)
-        file (rescue-with {} (with-input-file config-path yaml.load))
+        file (rescue-with {} (with [f (open config-path)] (yaml.load (.read f))))
         cli-dict (vars cli)
         final {})
 
   (for [(, key default-val) (.items default.options)]
-    (setv val (or (dget cli-dict key)
-                  (dget file key)
+    (setv val (or (safe-get cli-dict key)
+                  (safe-get file key)
                   default-val))
     (assoc final key val))
 
@@ -59,6 +60,8 @@
     :metavar "path" :type str :help (msg "config-path"))
   (argument "-V" "--version"
     :action "store_true" :help (msg "version"))
+  (argument "-L" "--loglevel"
+    :choices ["debug" "info" "warning" "error" "quiet"] :help (msg "loglevel"))
 
   (argument "file"
     :metavar "file" :type str :nargs "?" :help (msg "file"))

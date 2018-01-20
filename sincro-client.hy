@@ -8,7 +8,7 @@
 
 
 (defn handle-hello [msg]
-  (setv motd (get-with-default msg None "motd"))
+  (setv motd (safe-get msg "motd"))
   (if motd
     (print motd)
     (log.warning "property-not-found" :property "motd")))
@@ -31,7 +31,7 @@
 
 
 (defn quit-with-error [msg]
-  (setv err (get-with-default msg None "message"))
+  (setv err (safe-get msg "message"))
   (log.error "server-error" :message err)
   (sys.exit 1))
 

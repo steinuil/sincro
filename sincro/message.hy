@@ -19,6 +19,7 @@
       "config-path" "Override path to the config file"
       "debug" "Debug mode"
       "version" "Print version and quit"
+      "loglevel" "Set log level"
       "file" "File to be played"
       "player-path" "Path to the player executable"
       "player-args" "Player arguments, prepend with '--' if the options start with '-'" }
