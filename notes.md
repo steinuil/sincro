@@ -5,42 +5,40 @@ codebase.
 # Responses
 The protocol as of version 1.5.1.
 
-```
-Hello: {
-  username: <username>
-  room: { name: <room name> }
-  version: <version string>
-  realversion: <version string>
-  motd: <string>
-  features: {
-  }
-}
-
-List: [
-  { <room name>: {
+    Hello: {
       username: <username>
-      position: <file position>
-      file: null | {
-        name: <filename>
-        duration: <file duration>
-        size: <file size>
-        path: <file path>
+      room: { name: <room name> }
+      version: <version string>
+      realversion: <version string>
+      motd: <string>
+      features: {
       }
-      isController: <boolean>
-      isReady: null | <boolean>
     }
-  }
-]
 
-Error: {
-  message: <string>
-}
+    List: [
+      { <room name>: {
+          username: <username>
+          position: <file position>
+          file: null | {
+            name: <filename>
+            duration: <file duration>
+            size: <file size>
+            path: <file path>
+          }
+          isController: <boolean>
+          isReady: null | <boolean>
+        }
+      }
+    ]
 
-Chat: {
-  message: <string>
-  username: <username>
-}
-```
+    Error: {
+      message: <string>
+    }
+
+    Chat: {
+      message: <string>
+      username: <username>
+    }
 
 
 # Security

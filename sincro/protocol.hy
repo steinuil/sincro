@@ -1,5 +1,5 @@
 ;; Decodes and encodes messages based on the protocol.
-(import [sincro [logger]]
+(import [sincro [logger util]]
         sincro hashlib secrets time)
 (require [sincro.util [*]])
 
@@ -8,9 +8,16 @@
 ;; Logs into the server if necessary.
 (defn hello [&kwonly name room [server-password None]]
   "The first message expected by the server"
+  (setv features { "chat" False
+                   "sharedPlaylists" False
+                   "featureList" True
+                   "readiness" True
+                   "managedRooms" True })
   (setv opts { "username" name
                "room" { "name" room }
-               "realversion" sincro.syncplay-mimic-version })
+               "version" "1.2.255"
+               "realversion" sincro.syncplay-mimic-version
+               "features" features })
   (when server-password
     (assoc opts "password" (.hexdigest (hashlib.md5 server-password))))
   { "Hello" opts })
@@ -69,6 +76,11 @@
   { "Set" { "playlistIndex" { "index" index } } })
 
 
+(defn set-features [features]
+  "Send a list of supported features"
+  { "Set" { "features" features } })
+
+
 (defn get-users []
   "Request a list of users in your room with their status"
   { "List" None })
@@ -85,17 +97,17 @@
 
 
 ;; This is really not necessary.
-(defclass PingCalculator [object]
+(defclass Ping [object]
   "Keeps track of the last ping and of the
   exponentially weighted moving average (EWMA) of all the pings"
-  [*warmup*    10   ; samples to collect before seeding the EWMA
+  [*warmup* 10 ; samples to collect before seeding the EWMA
+   *decay* 0.7
    ;; The decay factor, or alpha, which determines how much sudden spikes
    ;; in the values affect the average.
    ;; A factor close to 0 is more sensible, close to 1 is more sturdy.
-   *decay*     0.7
-   samples     0     ; total number of samples
+   samples 0 ; total number of samples
    average-rtt []
-   last-rtt    None
+   last-rtt None
    last-forward-delay None]
 
   (defm add [timestamp sender-rtt]
@@ -128,16 +140,16 @@
 (setv *server-keep-alive* 0)
 
 
-(def ping (PingCalculator))
+(setv ping (Ping))
 
 
 (defn send-player-state
-  [&kwonly [position 0] [paused False] [seeked False]]
+  [&kwonly [position 0] [paused? False] [seeked? False]]
   ""
   (setv state
     { "playstate" { "position" position
-                    "paused" paused
-                    "doSeek" seeked }
+                    "paused" paused?
+                    "doSeek" seeked? }
       ; There's also a key called "latencyCalculation", but it's never used.
       "ping" { "clientLatencyCalculation" (time.time)
                "clientRtt" ping.last-rtt } })
@@ -177,3 +189,86 @@
       (try ((get handlers cmd) args)
         (except [KeyError]
           (log.warning "unknown-command" :command cmd))))))
+
+
+(defn handle-hello [args]
+  (setv name (safe-get args "username")
+        room (safe-get args "room" "name")
+        version (or (safe-get args "realversion") (safe-get args "version")))
+  (unless (and name room version)
+    (return))
+  { "name" name
+    "room" room
+    "version" version
+    "motd" (safe-get args "motd")
+    "features" (or (safe-get args "features") {}) })
+
+
+(setv set-handlers
+      { "room" (fn [v] (safe-get v "name"))
+        "user" (fn [v]
+                 (setv (, user settings) (util.dict-to-tuple v)
+                       event (safe-get settings "event")
+                       out { "user" user
+                             "room" (safe-get settings "room" "name")
+                             "file" (safe-get settings "file")
+                             "event" None
+                             "version" None
+                             "features" {} })
+                 (when event
+                   (cond [(in "joined" event)
+                          (assoc out "event" "joined")
+                          (assoc out "version" (get event "version"))
+                          (assoc out "features" (get event "features"))]
+                         [(in "left" event)
+                          (assoc out "event" "left")]))
+                 out)
+        "controllerAuth" (fn [v] v)
+        "newControlledRoom" (fn [v] { "room" (get v "roomName")
+                                      "password" (get v "password") })
+        "ready" (fn [v] { "user" (get v "username")
+                          "ready?" (get v "isReady")
+                          "manual?" (safe-get v "manuallyInitiated") })
+        "playlistIndex" (fn [v] v)
+        "playlistChange" (fn [v] v)
+        "features" (fn [v] { "user" (get v "username")
+                             "features" (get v "features") }) })
+
+
+(defn handle-state [msg]
+  ;; We don't send client ignoringOnTheFly statuses, so we shouldn't receive
+  ;; any either.
+  (setv keep-alive (safe-get msg "ignoringOnTheFly" "server")
+        play-state (safe-get msg "playstate")
+        server-ping (safe-get msg "ping"))
+  (when server-ping
+    (ping.add (get server-ping "latencyCalculation") (get server-ping "serverRtt")))
+  (when keep-alive
+    (global *server-keep-alive*)
+    (setv *server-kee-alive* keep-alive))
+  (when play-state
+    { "position" (or (safe-get play-state "position") 0)
+      "paused?" (safe-get play-state "paused")
+      "seeked?" (safe-get play-state "doSeek")
+      "set-by" (safe-get play-state "setBy") }))
+
+
+(defn handle-list [msg]
+  (lfor (, room users) (.items msg)
+    { "room" room
+      "users"
+      (lfor (, user settings) (.items users)
+        { "user" user
+          "file" (or (safe-get settings "file") None)
+          "controller?" (safe-get settings "controller")
+          "ready?" (safe-get settings "isReady")
+          "features" (or (safe-get settings "features") {}) }) }))
+
+
+(defn handle-chat [msg]
+  { "user" (get msg "username")
+    "message" (get msg "message") })
+
+
+(defn handle-error [msg]
+  (get msg "message"))

@@ -1,6 +1,6 @@
 #!/usr/bin/env hy
-(import [sincro [config connection protocol client]]
-        sys)
+(import sys
+        [sincro [config connection protocol client]])
 (require [sincro.util [*]])
 
 
@@ -23,7 +23,6 @@
   (setv conf (config.load (rest args))
         file (or (get conf "file") "「トレイン to トレイン」 AKA Trainroll 10 hours"))
   (with [conn (connection.Syncplay "syncplay.pl" 8995)]
-    ; use unpack operator on `conf` when a new version of hy is released
     (.send conn (protocol.hello :name (get conf "name") :room (get conf "room")
                                 :server-password (get conf "server-password")))
     (handle (.receive conn))

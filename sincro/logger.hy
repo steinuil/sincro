@@ -37,7 +37,7 @@
   [section None]
 
   (defm --init-- [section]
-    (def self.section section))
+    (setv self.section section))
 
   (defm __log [t msg rst fmt]
     (print t (vformat (message.fetch self.section msg) fmt) (.join " " (map str rst))))

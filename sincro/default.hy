@@ -4,7 +4,7 @@
 ;; Stay classy, Python.
 (import getpass)
 
-(def options
+(setv options
   { "name" (getpass.getuser)
     "room" "default-room"
     "server" "syncplay.pl"
@@ -14,4 +14,4 @@
     "player-args" [] })
 
 
-(def config-path "conf.yaml")
+(setv config-path "conf.yaml")

@@ -30,7 +30,7 @@
       (for [msg msgs]
         (self.log.debug "to" msg))
       (.send self.conn
-        (->> (list-comp (+ (json.dumps msg) self.separator) [msg msgs])
+        (->> (lfor msg msgs (+ (json.dumps msg) self.separator))
              (.join "")
              (.encode)))))
 
@@ -44,14 +44,14 @@
 
   (defm receive []
     "Receive and decode messages"
-    (def messages (-> (.recv self.conn 4096)
-                      (.decode)
-                      (.strip)
-                      (.splitlines)))
+    (setv messages (-> (.recv self.conn 4096)
+                       (.decode)
+                       (.strip)
+                       (.splitlines)))
     (unless (empty? messages)
       (for [line messages]
         (self.log.debug "from" line))
-      (list-comp (json.loads line) [line messages]))))
+      (lfor line messages (json.loads line)))))
 
 
 ;; Subclasses for mpv and syncplay server connections.

@@ -4,7 +4,7 @@
 (defn fetch [property]
   { "command" [ "get_property" property ] })
 
-(def events
+(setv events
   { "event"
     [ "start-file"
       "end-file"
