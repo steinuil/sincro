@@ -37,3 +37,7 @@
 (defn dict-to-tuple [d]
   "Convert a dict with a single key to a tuple"
   (get (lfor [k v] (.items d) (, k v)) 0))
+
+
+(defmacro printf [fmt &rest args]
+  `(print (.format ~fmt ~@args)))

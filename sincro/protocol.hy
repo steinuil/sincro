@@ -164,26 +164,13 @@
 (defn make-handler [&kwonly hello set list state error chat]
   "Takes handler functions for all possible server responses
   and returns a handler function that handles all responses"
-
-  (defn handle-state [msg]
-    ;; Handle ping and keep-alive stuff locally
-    (setv server-ping (safe-get msg "ping")
-          keepalive (safe-get msg "ignoringOnTheFly" "server"))
-    (when server-ping
-      (ping.add (get server-ping "latencyCalculation") (get server-ping "serverRtt")))
-    (when keepalive
-      (global *server-keep-alive*)
-      (setv *server-keep-alive* keepalive))
-    ;; Let the state handler do the rest
-    (state msg))
-
   (setv log (logger.Logger "syncplay-handler")
-        handlers { "Hello" hello
+        handlers { "Hello" (comp hello handle-hello)
                    "Set" set
-                   "List" list
-                   "State" handle-state
-                   "Error" error
-                   "Chat" chat })
+                   "List" (comp list handle-list)
+                   "State" (comp state handle-state)
+                   "Error" (comp error handle-error)
+                   "Chat" (comp chat handle-chat) })
   (fn [msg]
     (for [(, cmd args) (.items msg)]
       (try ((get handlers cmd) args)
@@ -192,47 +179,55 @@
 
 
 (defn handle-hello [args]
-  (setv name (safe-get args "username")
-        room (safe-get args "room" "name")
-        version (or (safe-get args "realversion") (safe-get args "version")))
-  (unless (and name room version)
-    (return))
-  { "name" name
-    "room" room
-    "version" version
-    "motd" (safe-get args "motd")
+  { "name" (get args "username")
+    "room" (get args "room" "name")
+    "version" (or (safe-get args "realversion") (safe-get args "version"))
+    "motd" (ignore-exceptions (.strip (get args "motd")))
     "features" (or (safe-get args "features") {}) })
 
 
-(setv set-handlers
-      { "room" (fn [v] (safe-get v "name"))
-        "user" (fn [v]
-                 (setv (, user settings) (util.dict-to-tuple v)
-                       event (safe-get settings "event")
-                       out { "user" user
-                             "room" (safe-get settings "room" "name")
-                             "file" (safe-get settings "file")
-                             "event" None
-                             "version" None
-                             "features" {} })
-                 (when event
-                   (cond [(in "joined" event)
-                          (assoc out "event" "joined")
-                          (assoc out "version" (get event "version"))
-                          (assoc out "features" (get event "features"))]
-                         [(in "left" event)
-                          (assoc out "event" "left")]))
-                 out)
-        "controllerAuth" (fn [v] v)
-        "newControlledRoom" (fn [v] { "room" (get v "roomName")
-                                      "password" (get v "password") })
-        "ready" (fn [v] { "user" (get v "username")
-                          "ready?" (get v "isReady")
-                          "manual?" (safe-get v "manuallyInitiated") })
-        "playlistIndex" (fn [v] v)
-        "playlistChange" (fn [v] v)
-        "features" (fn [v] { "user" (get v "username")
-                             "features" (get v "features") }) })
+(defn handle-user-change [msg]
+  (setv [user settings] (util.dict-to-tuple msg)
+        event (safe-get settings "event")
+        out { "user" user
+              "room" (safe-get settings "room" "name")
+              "file" (safe-get settings "file")
+              "event" None
+              "version" None
+              "features" {} })
+  (when event
+    (cond [(in "joined" event)
+           (assoc out "event" "joined")
+           (assoc out "version" (get event "version"))
+           (assoc out "features" (get event "features"))]
+          [(in "left" event)
+           (assoc out "event" "left")]))
+  out)
+
+
+(defn make-set-handler
+  [&kwonly room-change user-change features-change user-ready
+           controller-identified new-controlled-room set-playlist-index set-playlist]
+
+  (setv set-handlers
+    { "room" (comp room-change (fn [msg] (safe-get msg "name")))
+      "user" (comp user-change handle-user-change)
+      "features" (comp features-change (fn [msg] { "user" (get msg "username")
+                                                   "features" (get msg "features") }))
+      "ready" (comp user-ready (fn [msg] { "user" (get msg "username")
+                                           "ready?" (get msg "isReady")
+                                           "manual?" (safe-get msg "manuallyInitiated") }))
+      "controllerAuth" controller-identified
+      "newControlledRoom" (comp new-controlled-room (fn [msg] { "room" (get msg "roomName")
+                                                                "password" (get msg "password") }))
+      "playlistIndex" set-playlist-index
+      "playlistChange" set-playlist })
+
+  (fn [msg]
+    (for [(, cmd args) (.items msg)]
+      (try ((get set-handlers cmd) args)
+        (except [KeyError]
+          (log.warning "unknown-command" :command cmd))))))
 
 
 (defn handle-state [msg]
@@ -245,7 +240,7 @@
     (ping.add (get server-ping "latencyCalculation") (get server-ping "serverRtt")))
   (when keep-alive
     (global *server-keep-alive*)
-    (setv *server-kee-alive* keep-alive))
+    (setv *server-keep-alive* keep-alive))
   (when play-state
     { "position" (or (safe-get play-state "position") 0)
       "paused?" (safe-get play-state "paused")
