@@ -224,10 +224,10 @@
       "playlistChange" set-playlist })
 
   (fn [msg]
-    (for [(, cmd args) (.items msg)]
-      (try ((get set-handlers cmd) args)
-        (except [KeyError]
-          (log.warning "unknown-command" :command cmd))))))
+    (setv [cmd args] (util.dict-to-tuple msg))
+    (try ((get set-handlers cmd) args)
+      (except [KeyError]
+        (log.warning "unknown-command" :command cmd)))))
 
 
 (defn handle-state [msg]

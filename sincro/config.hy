@@ -15,7 +15,8 @@
   "Load the config options from all locations and return them in a dict"
   (setv cli (parse-cli cli-args))
   (when cli.version
-    (quit (message.fetch "various" "version")))
+    (print (message.fetch "various" "version"))
+    (quit))
   (when cli.loglevel
     (logger.set-level cli.loglevel))
 
