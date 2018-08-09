@@ -1,7 +1,3 @@
-(import [sincro.util [*]])
-(require [sincro.util [*]])
-
-
 (defn command [&rest cmd]
   { "command" cmd })
 
@@ -16,16 +12,6 @@
 
 (defn print [msg]
   (command "show-text" msg))
-
-
-(setv events
-  { "event"
-    [ "start-file"
-      "end-file"
-      "seek"
-      "playback-restart"
-      "pause"
-      "unpause" ] })
 
 
 (defn toggle-play [&optional play?]

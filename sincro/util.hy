@@ -13,6 +13,10 @@
   `(defn ~(HySymbol name) [self ~@args] ~@body))
 
 
+(defmacro defm/a [name args &rest body]
+  `(defn/a ~(HySymbol name) [self ~@args] ~@body))
+
+
 (defmacro incv [var] `(setv ~var (inc ~var)))
 (defmacro decv [var] `(setv ~var (dec ~var)))
 

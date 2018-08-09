@@ -1,8 +1,11 @@
 #!/usr/bin/env hy
-(import sys os [xdg [BaseDirectory :as xdg]]
-        subprocess time
-        [sincro [config connection logger player protocol client]])
 (require [sincro.util [*]])
+(import sys
+        os
+        time
+        subprocess
+        [xdg [BaseDirectory :as xdg]]
+        [sincro [config connection logger player protocol client]])
 
 
 (defn handle [p]
@@ -20,12 +23,25 @@
               { "command" [ "observe_property" "file-size" ] }))
 
 
+(setv mpv-args
+      ["--force-window"
+       "--pause"
+       "--idle"
+       "--no-terminal"
+       "--keep-open"])
+
+
 (defmain [&rest args]
   ;(logger.set-level "debug")
   (setv conf (config.load (rest args))
         mpv-socket (os.path.join (xdg.get-runtime-dir) "sincro_mpv_socket"))
 
-  (subprocess.Popen [(get conf "player-path") #*(get conf "player-args") "--force-window" "--idle" (+ "--input-ipc-server=" mpv-socket)])
+  (print mpv-socket)
+
+  (with [(subprocess.Popen [(get conf "player-path")
+                     #*mpv-args
+                     #*(get conf "player-args")
+                     (+ "--input-ipc-server=" mpv-socket)])]
   (time.sleep 1)
 
   (with [pconn (connection.Mpv mpv-socket)]
@@ -49,5 +65,5 @@
       (handle (.receive conn))
 
       (.send pconn (player.command "quit"))
-  ))
+  )))
   (print "ogre"))
