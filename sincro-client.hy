@@ -36,13 +36,11 @@
   (setv conf (config.load (rest args))
         mpv-socket (os.path.join (xdg.get-runtime-dir) "sincro_mpv_socket"))
 
-  (print mpv-socket)
-
   (with [(subprocess.Popen [(get conf "player-path")
                      #*mpv-args
                      #*(get conf "player-args")
                      (+ "--input-ipc-server=" mpv-socket)])]
-  (time.sleep 1)
+  (time.sleep 2)
 
   (with [pconn (connection.Mpv mpv-socket)]
     (with [conn (connection.Syncplay (get conf "server") (get conf "port"))]
