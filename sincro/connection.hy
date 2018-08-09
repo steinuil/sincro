@@ -1,79 +1,65 @@
-(import [sincro [message logger]] json socket)
 (require [sincro.util [*]])
+(import json socket asyncio
+        [sincro [message logger]])
 
 
 (defclass ConnectionJson [object]
   "Generic connection handler that serializes messages to JSON.
   Meant to be inherited."
   [conn None
-   host None
-   separator None
-   log None]
+   reader None
+   writer None
+   separator None]
 
-  ;; Make sure "with" works correctly
-  (defm --enter-- [] (self.open) self)
-  (defm --exit-- [&rest args] (self.close))
+  (defm/a --aenter-- []
+    (await (self.open))
+    self)
 
-  (defm open []
-    (self.log.info "connect" :server (self.host-string))
-    (.connect self.conn self.host))
+  (defm/a --aexit-- [&rest args]
+    (self.close))
+
+  (defm/a open []
+    (setv [self.reader self.writer] (await self.conn)))
 
   (defm close []
-    (self.log.info "disconnect")
-    (ignore-exceptions
-      (.shutdown self.conn socket.SHUT_RDWR))
-    (.close self.conn))
+    (.close self.writer))
 
   (defm send* [msgs]
     "Encode a list of messages to JSON and send them"
-    (unless (empty? msgs)
-      (for [msg msgs]
-        (self.log.debug "to" msg))
-      (.send self.conn
-        (->> (lfor msg msgs (+ (json.dumps msg) self.separator))
-             (.join "")
-             (.encode)))))
+    (.writelines self.writer
+      (map (fn [msg] (.encode (+ (json.dumps msg) self.separator)))
+           msgs)))
 
   (defm send [&rest msgs]
-    "Like send*, but takes variadic arguments"
     (self.send* (list msgs)))
 
-  (defm host-string []
-    "The stringified host"
-    (raise NotImplementedError))
+  (defm/a flush []
+    (await (.drain self.writer)))
 
-  (defm receive []
-    "Receive and decode messages"
-    (setv messages (-> (.recv self.conn 4096)
-                       (.decode)
-                       (.strip)
-                       (.splitlines)))
-    (unless (empty? messages)
+  (defm/a receive []
+    (while True
+      (setv bytes (await (.read self.reader 4096)))
+      (when (empty? bytes)
+        (break))
+
+      (setv messages (->> bytes
+                          (.decode)
+                          (.strip)
+                          (.splitlines)))
       (for [line messages]
-        (self.log.debug "from" line))
-      (lfor line messages (json.loads line)))))
+        (yield (json.loads line))))))
 
 
 ;; Subclasses for mpv and syncplay server connections.
 ;; Send a dictionary and receive a list of dictionaries.
 (defclass Syncplay [ConnectionJson]
-  (defm --init-- [host port]
-    (setv self.host (, host port)
-          self.log (logger.Logger "syncplay-connection")
-          self.separator "\r\n"
-          self.conn (socket.socket socket.AF_INET socket.SOCK_STREAM))
-    (.settimeout self.conn 5))
-
-  (defm host-string []
-    (.join ":" (map str self.host))))
+  (defm --init-- [host port loop]
+    (setv self.conn (asyncio.open-connection :host host :port port :loop loop
+                                             :family socket.AF_INET)
+          self.separator "\r\n")))
 
 
 (defclass Mpv [ConnectionJson]
-  (defm --init-- [path]
-    (setv self.host (.encode path)
-          self.log (logger.Logger "mpv-connection")
-          self.separator "\n"
-          self.conn (socket.socket socket.AF_UNIX socket.SOCK_STREAM)))
-
-  (defm host-string []
-    (.decode self.host)))
+  (defm --init-- [path loop]
+    (setv self.conn (asyncio.open-unix-connection :path (.encode path) :loop loop)
+          self.separator "\n")))

@@ -104,7 +104,7 @@
 
 
 (defn send-player-state
-  [&kwonly [position 0] [paused? False] [seeked? False]]
+  [&kwonly paused? [position 0] [seeked? False]]
   ""
   (setv state
     { "playstate" { "position" position
@@ -132,10 +132,10 @@
                    "Error" (comp error handle-error)
                    "Chat" (comp chat handle-chat) })
   (fn [msg]
-    (for [(, cmd args) (.items msg)]
-      (try ((get handlers cmd) args)
-        (except [KeyError]
-          (log.warning "unknown-command" :command cmd))))))
+    (setv [cmd args] (util.dict-to-tuple msg))
+    (try ((get handlers cmd) args)
+      (except [KeyError]
+        (log.warning "unknown-command" :command cmd)))))
 
 
 (defn handle-hello [args]

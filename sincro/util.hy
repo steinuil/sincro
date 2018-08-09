@@ -26,18 +26,6 @@
      (except [[KeyError IndexError]] None)))
 
 
-(defn merge-dicts [dest source]
-  "Destructively merge dest with source,
-  overwriting dest when there's a name clash"
-  (for [(, key val) (.items source)]
-    (assoc dest key val))
-  dest)
-
-
-(defn tuple? [x]
-  (isinstance x tuple))
-
-
 (defn dict-to-tuple [d]
   "Convert a dict with a single key to a tuple"
   (get (lfor [k v] (.items d) (, k v)) 0))
