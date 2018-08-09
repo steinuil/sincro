@@ -12,32 +12,13 @@
   (for [msg p] (client.response-handler msg)))
 
 
-;(defn handle-mpv-event [ev]
-;  (setv name (get ev "event"))
-;  (cond [(= ev "start-file")]))
-
-
-(defn setup-mpv [conn]
-  (.send conn { "command" [ "observe_property" "filename" ] }
-              { "command" [ "observe_property" "duration" ] }
-              { "command" [ "observe_property" "file-size" ] }))
-
-
-(setv mpv-args
-      ["--force-window"
-       "--pause"
-       "--idle"
-       "--no-terminal"
-       "--keep-open"])
-
-
 (defmain [&rest args]
   ;(logger.set-level "debug")
   (setv conf (config.load (rest args))
         mpv-socket (os.path.join (xdg.get-runtime-dir) "sincro_mpv_socket"))
 
   (with [(subprocess.Popen [(get conf "player-path")
-                     #*mpv-args
+                     #*player.mpv-args
                      #*(get conf "player-args")
                      (+ "--input-ipc-server=" mpv-socket)])]
   (time.sleep 2)

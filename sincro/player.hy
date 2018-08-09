@@ -27,3 +27,11 @@
 (setv file-info
       [(get-property "file-size")
        (get-property "duration")])
+
+
+(setv mpv-args
+      ["--force-window"
+       "--pause"
+       "--idle"
+       "--no-terminal"
+       "--keep-open"])
