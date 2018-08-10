@@ -104,7 +104,7 @@
 
 
 (defn send-player-state
-  [&kwonly paused? [position 0] [seeked? False]]
+  [&kwonly paused? [position None] [seeked? False]]
   ""
   (setv state
     { "playstate" { "position" position

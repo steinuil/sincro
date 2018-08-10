@@ -1,5 +1,5 @@
 (defn command [&rest cmd]
-  { "command" cmd })
+  { "command" (list cmd) })
 
 
 (defn get-property [property]
@@ -11,7 +11,7 @@
 
 
 (defn print [msg]
-  (command "show-text" msg))
+  (command "show-text" msg 2000))
 
 
 (defn toggle-play [&optional play?]
