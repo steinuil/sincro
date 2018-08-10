@@ -31,12 +31,26 @@
            msgs)))
 
   (defm send [&rest msgs]
+    "Alias for send* that takes variadic arguments"
     (self.send* (list msgs)))
 
   (defm/a flush []
+    "Flush the write buffer"
     (await (.drain self.writer)))
 
   (defm/a receive []
+    (setv bytes (await (.read self.reader 4096)))
+    (when (empty? bytes)
+      (return))
+    (->> bytes
+         (.decode)
+         (.strip)
+         (.splitlines)
+         (map json.loads)
+         (list)))
+
+  (defm/a receive-iter []
+    "Iterator that returns one message at a time"
     (while True
       (setv bytes (await (.read self.reader 4096)))
       (when (empty? bytes)

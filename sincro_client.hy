@@ -8,28 +8,6 @@
         [sincro [config connection player protocol client]])
 
 
-(defn/a player-conn [path loop]
-  (with/a [conn (connection.Mpv path loop)]
-    (for [:async msg (.receive conn)]
-      (assert msg)
-      (print "MPV:" msg)
-      (when (= (safe-get msg "event") "end-file")
-        (.stop loop)
-        (break)))
-    (.stop loop)))
-
-
-(defn/a server-conn [host port loop name room h]
-  (with/a [server (connection.Syncplay host port loop)]
-    (setv handler (h (fn [msg] (.send server msg))))
-    (.send server (protocol.hello :name name :room room))
-    (await (.flush server))
-    (for [:async msg (.receive server)]
-      (print "SERVER:" msg)
-      (handler msg))
-    (.stop loop)))
-
-
 (defn handler [reply]
   (protocol.make-handler
     :hello (constantly None)
@@ -49,14 +27,51 @@
     :error (fn [msg] (print (+ "ERROR: " msg)) (quit 1))))
 
 
+(defn/a queue-loop [queue send]
+  (while True
+    (setv msg (await (.get queue)))
+    (print "QUEUE:" msg)
+    (send msg)))
+
+
+(defn/a server-loop [conn event-loop player-queue server-queue handler-fn]
+  (with/a [server conn]
+    (setv send-fn (fn [msg] (.send server msg))
+          handler (handler-fn send-fn))
+    (.create-task event-loop (queue-loop server-queue send-fn))
+
+    (for [:async msg (.receive-iter server)]
+      (print "SERVER:" msg)
+      (handler msg))
+    (.stop event-loop)))
+
+
+(defn/a player-loop [conn event-loop player-queue server-queue]
+  (with/a [pl conn]
+    (setv send-fn (fn [msg] (.send pl msg)))
+    (.create-task event-loop (queue-loop player-queue send-fn))
+
+    (for [:async msg (.receive-iter pl)]
+      (print "PLAYER:" msg)
+      (when (= (safe-get msg "event") "end-file")
+        (break)))
+    (.stop event-loop)))
+
+
 (defmain [&rest args]
   (setv conf (config.load (rest args))
         mpv-socket (os.path.join (xdg-base-dir.get-runtime-dir) "sincro_mpv_socket")
         event-loop (asyncio.get-event-loop))
 
-  (.create-task event-loop (player-conn mpv-socket event-loop))
-  (.create-task event-loop (server-conn (get conf "server") (get conf "port") event-loop
-                                        (get conf "name") (get conf "room") handler))
+  (setv player-conn (connection.Mpv mpv-socket event-loop)
+        server-conn (connection.Syncplay (get conf "server") (get conf "port") event-loop)
+        player-queue (asyncio.Queue :loop event-loop)
+        server-queue (asyncio.Queue :loop event-loop))
+
+  (.create-task event-loop (player-loop player-conn event-loop player-queue server-queue))
+  (.create-task event-loop (server-loop server-conn event-loop player-queue server-queue handler))
+
+  (.put-nowait server-queue (protocol.hello :name (get conf "name") :room (get conf "room")))
 
   (setv args [(get conf "player-path")
               #*player.mpv-args
