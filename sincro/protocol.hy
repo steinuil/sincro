@@ -210,15 +210,14 @@
 
 
 (defn handle-list [msg]
-  (lfor (, room users) (.items msg)
-    { "room" room
-      "users"
-      (lfor (, user settings) (.items users)
-        { "user" user
-          "file" (or (safe-get settings "file") None)
-          "controller?" (safe-get settings "controller")
-          "ready?" (safe-get settings "isReady")
-          "features" (or (safe-get settings "features") {}) }) }))
+  (assert (= (len msg) 1))
+  (setv [room users] (util.dict-to-tuple msg))
+  (lfor (, user settings) (.items users)
+    { "user" user
+      "file" (or (safe-get settings "file") None)
+      "controller?" (safe-get settings "controller")
+      "ready?" (safe-get settings "isReady")
+      "features" (or (safe-get settings "features") {}) }))
 
 
 (defn handle-chat [msg]

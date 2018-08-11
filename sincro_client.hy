@@ -15,7 +15,8 @@
       (assoc state "name" (get msg "name"))
       (assoc state "room" (get msg "room"))
       (print "SERVER VERSION:" (get msg "version"))
-      (print "MOTD:" (get msg "motd")))
+      (print "MOTD:" (get msg "motd"))
+      (reply (protocol.get-users)))
 
     :state
     (fn [msg]
@@ -23,7 +24,19 @@
       (reply (protocol.send-player-state :paused? (get state "paused?")
                                          :position (get state "position"))))
 
-    :list (constantly None)
+    :list
+    (fn [msg]
+      (assoc state "users" msg))
+
+    :chat
+    (fn [msg]
+      (print "CHAT:" (.format "<{}>" (get msg "user")) (get msg "message")))
+
+    :error
+    (fn [msg]
+      (print "ERROR:" msg)
+      (quit 1))
+
     :set (protocol.make-set-handler
            :room-change (constantly None)
            :user-change (constantly None)
@@ -32,9 +45,7 @@
            :controller-identified (constantly None)
            :new-controlled-room (constantly None)
            :set-playlist (constantly None)
-           :set-playlist-index (constantly None))
-    :chat (constantly None)
-    :error (fn [msg] (print (+ "ERROR: " msg)) (quit 1))))
+           :set-playlist-index (constantly None))))
 
 
 (defn/a server-loop [sv state event-loop pl-send]
@@ -48,9 +59,6 @@
   (.stop event-loop))
 
 
-(setv *position-msg* 1)
-
-
 (defn/a player-loop [pl state event-loop sv-send]
   (with/a [pl]
     (.send pl (player.print "Welcome to sincro"))
@@ -61,13 +69,13 @@
         (cond [(= event "end-file") (break)]
               [(= event "pause")
                (assoc state "paused?" True)
-               (.send pl (player.get-property "time-pos" :id *position-msg*))]
+               (.send pl (player.get-position))]
               [(= event "unpause")
                (assoc state "paused?" False)
-               (.send pl (player.get-property "time-pos" :id *position-msg*))]))
+               (.send pl (player.get-position))]))
       (setv data (safe-get msg "data"))
       (when data
-        (cond [(= (safe-get msg "request_id") *position-msg*)
+        (cond [(= (safe-get msg "request_id") player.*position-msg*)
                (assoc state "position" data)
                (sv-send (protocol.send-player-state :paused? False
                                                     :position (get state "position")))]))
@@ -90,7 +98,8 @@
           "name" (get conf "name")
           "room" (get conf "room")
           "position" 0
-          "file" file }
+          "file" file
+          "users" [] }
 
         event-loop (asyncio.get-event-loop)
         player-conn (connection.Mpv mpv-socket event-loop)
