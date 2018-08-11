@@ -17,6 +17,12 @@
       (print "SERVER VERSION:" (get msg "version"))
       (print "MOTD:" (get msg "motd")))
 
+    :state
+    (fn [msg]
+      (assoc state "position" (get msg "position"))
+      (reply (protocol.send-player-state :paused? (get state "paused?")
+                                         :position (get state "position"))))
+
     :list (constantly None)
     :set (protocol.make-set-handler
            :room-change (constantly None)
@@ -27,12 +33,6 @@
            :new-controlled-room (constantly None)
            :set-playlist (constantly None)
            :set-playlist-index (constantly None))
-    :state
-    (fn [msg]
-      (assoc state "position" (get msg "position"))
-      (reply (protocol.send-player-state :paused? (get state "paused?")
-                                         :position (get state "position"))))
-
     :chat (constantly None)
     :error (fn [msg] (print (+ "ERROR: " msg)) (quit 1))))
 
@@ -48,6 +48,9 @@
   (.stop event-loop))
 
 
+(setv *position-msg* 1)
+
+
 (defn/a player-loop [pl state event-loop sv-send]
   (with/a [pl]
     (.send pl (player.print "Welcome to sincro"))
@@ -58,10 +61,14 @@
         (cond [(= event "end-file") (break)]
               [(= event "pause")
                (assoc state "paused?" True)
-               (sv-send (protocol.send-player-state :paused? True
-                                                    :position (get state "position")))]
+               (.send pl (player.get-property "time-pos" :id *position-msg*))]
               [(= event "unpause")
                (assoc state "paused?" False)
+               (.send pl (player.get-property "time-pos" :id *position-msg*))]))
+      (setv data (safe-get msg "data"))
+      (when data
+        (cond [(= (safe-get msg "request_id") *position-msg*)
+               (assoc state "position" data)
                (sv-send (protocol.send-player-state :paused? False
                                                     :position (get state "position")))]))
       (await (.flush pl))))

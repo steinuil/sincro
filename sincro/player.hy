@@ -1,9 +1,10 @@
-(defn command [&rest cmd]
-  { "command" (list cmd) })
+(defn command [&rest cmd &kwonly [id None]]
+  { "command" (list cmd)
+    "request_id" id })
 
 
-(defn get-property [property]
-  (command "get_property" property))
+(defn get-property [property &kwonly [id None]]
+  (command "get_property" property :id id))
 
 
 (defn seek-to [val]
