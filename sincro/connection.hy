@@ -12,8 +12,7 @@
    separator None]
 
   (defm/a --aenter-- []
-    (await (self.open))
-    self)
+    (await (self.open)))
 
   (defm/a --aexit-- [&rest args]
     (self.close))
