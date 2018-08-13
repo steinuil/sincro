@@ -1,57 +1,44 @@
 (require [sincro.util [*]])
-(import json socket asyncio
+(import json
+        curio
         [sincro [message logger]])
 
 
 (defclass ConnectionJson [object]
   "Generic connection handler that serializes messages to JSON.
   Meant to be inherited."
-  [conn None
-   reader None
-   writer None
+  [socket None
+   host None
    separator None]
 
   (defm/a --aenter-- []
     (await (self.open)))
 
   (defm/a --aexit-- [&rest args]
-    (self.close))
+    (await (self.close)))
 
   (defm/a open []
-    (setv [self.reader self.writer] (await self.conn)))
+    (await (.connect self.socket self.host)))
 
-  (defm close []
-    (.close self.writer))
+  (defm/a close []
+    (await (.close self.socket)))
 
-  (defm send* [msgs]
+  (defm/a send* [msgs]
     "Encode a list of messages to JSON and send them"
-    (.writelines self.writer
-      (map (fn [msg] (.encode (+ (json.dumps msg) self.separator)))
-           msgs)))
+    (setv bytes (->> (lfor msg msgs
+                       (+ (json.dumps msg) self.separator))
+                     (.join "")
+                     (.encode)))
+    (await (.send self.socket bytes)))
 
-  (defm send [&rest msgs]
+  (defm/a send [&rest msgs]
     "Alias for send* that takes variadic arguments"
-    (self.send* (list msgs)))
-
-  (defm/a flush []
-    "Flush the write buffer"
-    (await (.drain self.writer)))
-
-  (defm/a receive []
-    (setv bytes (await (.read self.reader 4096)))
-    (when (empty? bytes)
-      (return))
-    (->> bytes
-         (.decode)
-         (.strip)
-         (.splitlines)
-         (map json.loads)
-         (list)))
+    (await (self.send* (list msgs))))
 
   (defm/a receive-iter []
     "Iterator that returns one message at a time"
     (while True
-      (setv bytes (await (.read self.reader 4096)))
+      (setv bytes (await (.recv self.socket 8192)))
       (when (empty? bytes)
         (break))
 
@@ -66,13 +53,14 @@
 ;; Subclasses for mpv and syncplay server connections.
 ;; Send a dictionary and receive a list of dictionaries.
 (defclass Syncplay [ConnectionJson]
-  (defm --init-- [host port loop]
-    (setv self.conn (asyncio.open-connection :host host :port port :loop loop
-                                             :family socket.AF_INET)
+  (defm --init-- [host port]
+    (setv self.socket (curio.socket.socket :family curio.socket.AF_INET)
+          self.host (, host port)
           self.separator "\r\n")))
 
 
 (defclass Mpv [ConnectionJson]
-  (defm --init-- [path loop]
-    (setv self.conn (asyncio.open-unix-connection :path (.encode path) :loop loop)
+  (defm --init-- [path]
+    (setv self.socket (curio.socket.socket :family curio.socket.AF_UNIX)
+          self.host (.encode path)
           self.separator "\n")))
