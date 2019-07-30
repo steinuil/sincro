@@ -55,10 +55,10 @@ type UserJoinedEvent struct {
 }
 
 type File struct {
-	Name     string
-	Duration float64
-	Size     int64
-	Path     string
+	Name     string  `json:"name"`
+	Duration float64 `json:"duration"`
+	Size     int64   `json:"size"`
+	Path     string  `json:"path,omitempty"`
 }
 
 type UserFileChangeEvent struct {
