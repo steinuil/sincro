@@ -4,14 +4,6 @@ import "encoding/json"
 import "encoding/hex"
 import "crypto/md5"
 
-type ClientFeatures struct {
-	SharedPlaylists bool `json:"sharedPlaylists,omitempty"`
-	Chat            bool `json:"chat,omitempty"`
-	FeatureList     bool `json:"featureList,omitempty"`
-	Readiness       bool `json:"readiness"`
-	ManagedRooms    bool `json:"managedRooms"`
-}
-
 type roomName struct {
 	Name string `json:"name"`
 }

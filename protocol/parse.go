@@ -6,12 +6,13 @@ func parseHello(data []byte) (Hello, error) {
 	var out Hello
 
 	var resp struct {
-		Name    string `json:"username"`
+		User    string `json:"username"`
 		Version string `json:"realversion"`
 		Motd    string `json:"motd"`
 		Room    struct {
 			Name string `json:"name"`
 		} `json:"room"`
+		Features ServerFeatures `json:"features"`
 	}
 
 	err := json.Unmarshal(data, &resp)
@@ -19,10 +20,11 @@ func parseHello(data []byte) (Hello, error) {
 		return out, err
 	}
 
-	out.Name = resp.Name
+	out.User = resp.User
 	out.Version = resp.Version
 	out.Motd = resp.Motd
 	out.Room = resp.Room.Name
+	out.Features = resp.Features
 
 	return out, nil
 }
@@ -78,7 +80,7 @@ func parseFileChanged(file map[string]interface{}, user string, room string) (Us
 		User: user,
 		Room: room,
 		File: File{
-			Name:     file["name"].(string),
+			Filename: file["name"].(string),
 			Duration: file["duration"].(float64),
 			Size:     file["size"].(int64),
 			Path:     file["path"].(string),
@@ -99,11 +101,19 @@ func parseEvent(ev map[string]interface{}, user string, room string) (interface{
 	}
 
 	if ev["joined"] != nil {
+		features := ev["features"].(map[string]bool)
+
 		out := UserJoinedEvent{
-			User:     user,
-			Room:     room,
-			Version:  ev["version"].(string),
-			Features: ev["features"].(map[string]interface{}),
+			User:    user,
+			Room:    room,
+			Version: ev["version"].(string),
+			Features: ClientFeatures{
+				Chat:            features["chat"],
+				ManagedRooms:    features["managedRooms"],
+				FeatureList:     features["featureList"],
+				Readiness:       features["readiness"],
+				SharedPlaylists: features["sharedPlaylists"],
+			},
 		}
 
 		return out, nil

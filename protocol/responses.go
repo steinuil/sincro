@@ -1,16 +1,40 @@
 package protocol
 
-type Features map[string]interface{}
+type ServerFeatures struct {
+	Chat                 bool `json:"chat"`
+	IsolateRooms         bool `json:"isolateRooms"`
+	ManagedRooms         bool `json:"managedRooms"`
+	Readiness            bool `json:"readiness"`
+	MaxChatMessageLength int  `json:"maxChatMessageLength"`
+	MaxUsernameLength    int  `json:"maxUsernameLength"`
+	MaxRoomNameLength    int  `json:"maxRoomNameLength"`
+	MaxFilenameLength    int  `json:"maxFilenameLength"`
+}
+
+type ClientFeatures struct {
+	Chat            bool `json:"chat,omitempty"`
+	ManagedRooms    bool `json:"managedRooms"`
+	FeatureList     bool `json:"featureList,omitempty"`
+	Readiness       bool `json:"readiness"`
+	SharedPlaylists bool `json:"sharedPlaylists,omitempty"`
+}
+
+type File struct {
+	Filename string  `json:"name"`
+	Duration float64 `json:"duration"`
+	Size     int64   `json:"size"`
+	Path     string  `json:"path,omitempty"`
+}
 
 // "Hello" event
 
 // Hello: response to the Hello request
 type Hello struct {
-	Name     string
+	User     string
 	Version  string
 	Motd     string
 	Room     string
-	Features Features
+	Features ServerFeatures
 }
 
 // "Set" events
@@ -51,14 +75,7 @@ type UserJoinedEvent struct {
 	User     string
 	Room     string
 	Version  string
-	Features Features
-}
-
-type File struct {
-	Name     string  `json:"name"`
-	Duration float64 `json:"duration"`
-	Size     int64   `json:"size"`
-	Path     string  `json:"path,omitempty"`
+	Features ClientFeatures
 }
 
 type UserFileChangeEvent struct {
