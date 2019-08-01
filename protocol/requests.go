@@ -225,3 +225,18 @@ func GetUsers() []byte {
 	}
 	return out
 }
+
+func SendState() []byte {
+	type state struct {
+		State stateReq
+	}
+
+	out, err := json.Marshal(state{State: stateReq{
+		Playstate: playstateReq{},
+		Ping:      pingReq{},
+	}})
+	if err != nil {
+		panic(err)
+	}
+	return out
+}

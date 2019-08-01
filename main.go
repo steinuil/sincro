@@ -1,44 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"net"
 	"sincro/protocol"
 	"time"
 )
-
-func readLines(r io.Reader, out chan<- []byte) {
-	buf := make([]byte, 128)
-
-	line := bytes.Buffer{}
-
-	for {
-		read, err := r.Read(buf)
-		if read == 0 && err == io.EOF {
-			close(out)
-			return
-		}
-		if err != nil && err != io.EOF {
-			panic(err)
-		}
-
-		nl := bytes.Index(buf, []byte("\r\n"))
-		if nl != -1 {
-			line.Write(buf[:nl])
-
-			x := make([]byte, line.Len())
-			copy(x, line.Bytes())
-			out <- x
-
-			line.Reset()
-			buf = buf[nl+2:]
-		}
-
-		line.Write(buf)
-	}
-}
 
 func main() {
 	var err error
@@ -51,16 +18,22 @@ func main() {
 	conn.Write(protocol.SendHello("steen", "badboys421"))
 	conn.Write([]byte("\r\n"))
 
-	lines := make(chan []byte, 4)
+	lines := make(chan []byte)
 
 	go readLines(conn, lines)
 
 	for line := range lines {
 		time.Sleep(0)
+
 		msg, err := protocol.ParseMessage(line)
 		if err != nil {
 			fmt.Errorf("%s", err)
 		}
-		fmt.Printf("%v\n", msg)
+
+		if msg == nil {
+			fmt.Printf("%v\n", string(line))
+		} else {
+			fmt.Printf("%#v\n", msg)
+		}
 	}
 }

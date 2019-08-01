@@ -17,6 +17,8 @@ func ParseMessage(data []byte) (interface{}, error) {
 		return parseSet(out["Set"])
 	case out["List"] != nil:
 		return parseList(out["List"])
+	case out["State"] != nil:
+		return parseState(out["State"])
 	default:
 		return nil, nil // ERROR HERE
 	}

@@ -1,6 +1,9 @@
 package protocol
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"strings"
+)
 
 func parseHello(data []byte) (Hello, error) {
 	var out Hello
@@ -22,7 +25,7 @@ func parseHello(data []byte) (Hello, error) {
 
 	out.User = resp.User
 	out.Version = resp.Version
-	out.Motd = resp.Motd
+	out.Motd = strings.TrimSpace(resp.Motd)
 	out.Room = resp.Room.Name
 	out.Features = resp.Features
 
@@ -200,6 +203,40 @@ func parseList(data []byte) ([]User, error) {
 	if err != nil {
 		return out, err
 	}
+
+	return out, nil
+}
+
+type pingReq struct {
+	LatencyCalculation float64 `json:"latencyCalculation"`
+}
+
+type playstateReq struct {
+	Position  float64 `json:"position"`
+	DoSeek    bool    `json:"doSeek"`
+	IsPaused  bool    `json:"paused"`
+	SetByUser string  `json:"setBy"`
+}
+
+type stateReq struct {
+	Ping      pingReq      `json:"ping"`
+	Playstate playstateReq `json:"playstate"`
+}
+
+func parseState(data []byte) (State, error) {
+	var out State
+	var resp stateReq
+
+	err := json.Unmarshal(data, &resp)
+	if err != nil {
+		return out, err
+	}
+
+	out.Position = resp.Playstate.Position
+	out.DoSeek = resp.Playstate.DoSeek
+	out.IsPaused = resp.Playstate.IsPaused
+	out.SetByUser = resp.Playstate.SetByUser
+	out.LatencyCalculation = resp.Ping.LatencyCalculation
 
 	return out, nil
 }

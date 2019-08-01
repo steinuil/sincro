@@ -99,4 +99,9 @@ type User struct {
 }
 
 type State struct {
+	Position           float64
+	DoSeek             bool
+	IsPaused           bool
+	SetByUser          string
+	LatencyCalculation float64
 }
