@@ -9,10 +9,10 @@ import (
 	"time"
 )
 
-func readLines(r io.Reader, out chan<- string) {
-	var buf = make([]byte, 128)
+func readLines(r io.Reader, out chan<- []byte) {
+	buf := make([]byte, 128)
 
-	var line = bytes.Buffer{}
+	line := bytes.Buffer{}
 
 	for {
 		read, err := r.Read(buf)
@@ -27,7 +27,11 @@ func readLines(r io.Reader, out chan<- string) {
 		nl := bytes.Index(buf, []byte("\r\n"))
 		if nl != -1 {
 			line.Write(buf[:nl])
-			out <- line.String()
+
+			x := make([]byte, line.Len())
+			copy(x, line.Bytes())
+			out <- x
+
 			line.Reset()
 			buf = buf[nl+2:]
 		}
@@ -47,14 +51,13 @@ func main() {
 	conn.Write(protocol.SendHello("steen", "badboys421"))
 	conn.Write([]byte("\r\n"))
 
-	var lines = make(chan string, 4)
+	lines := make(chan []byte, 4)
 
 	go readLines(conn, lines)
 
 	for line := range lines {
 		time.Sleep(0)
-		fmt.Println("line", string(line))
-		msg, err := protocol.ParseMessage([]byte(line))
+		msg, err := protocol.ParseMessage(line)
 		if err != nil {
 			fmt.Errorf("%s", err)
 		}
