@@ -73,6 +73,17 @@ func parsePlaylistIndex(data []byte) (PlaylistIndex, error) {
 	return out, nil
 }
 
+func parsePlaylistChange(data []byte) (PlaylistChange, error) {
+	var out PlaylistChange
+
+	err := json.Unmarshal(data, &out)
+	if err != nil {
+		return out, err
+	}
+
+	return out, nil
+}
+
 // TODO handle errors
 
 func parseFileChanged(file map[string]interface{}, user string, room string) (UserFileChangeEvent, error) {
@@ -122,6 +133,17 @@ func parseEvent(ev map[string]interface{}, user string, room string) (interface{
 	return nil, nil // TODO return error
 }
 
+func parseFeatures(data []byte) (ServerFeatures, error) {
+	var out ServerFeatures
+
+	err := json.Unmarshal(data, &out)
+	if err != nil {
+		return out, err
+	}
+
+	return out, nil
+}
+
 func parseUser(data []byte) (interface{}, error) {
 	var dec map[string]map[string]interface{}
 
@@ -149,6 +171,8 @@ func parseUser(data []byte) (interface{}, error) {
 func parseSet(data []byte) (interface{}, error) {
 	var ev map[string]json.RawMessage
 
+	json.Unmarshal(data, &ev)
+
 	switch {
 	case ev["newControlledRoom"] != nil:
 		return parseNewControlledRoom(ev["newControlledRoom"])
@@ -157,14 +181,25 @@ func parseSet(data []byte) (interface{}, error) {
 	case ev["ready"] != nil:
 		return parseReady(ev["ready"])
 	case ev["playlistChange"] != nil:
-		return parsePlaylistIndex(ev["playlistChange"])
+		return parsePlaylistChange(ev["playlistChange"])
 	case ev["playlistIndex"] != nil:
 		return parsePlaylistIndex(ev["playlistIndex"])
 	case ev["user"] != nil:
 		return parseUser(ev["user"])
 	case ev["features"] != nil:
-		return nil, nil
+		return parseFeatures(ev["features"])
 	default:
-		return nil, nil
+		return nil, nil // error!
 	}
+}
+
+func parseList(data []byte) ([]User, error) {
+	var out []User
+
+	err := json.Unmarshal(data, &out)
+	if err != nil {
+		return out, err
+	}
+
+	return out, nil
 }

@@ -1,12 +1,13 @@
 package protocol
 
 import (
-	"gotest.tools/assert"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func TestParseHello(t *testing.T) {
-	var data = []byte(`{
+	data := []byte(`{
 		"username":"test",
 		"room":{"name":"testroom"},
 		"realversion": "1.6.4",
@@ -48,7 +49,7 @@ func TestParseHello(t *testing.T) {
 }
 
 func TestParseNewControlledRoom(t *testing.T) {
-	var data = []byte(`{
+	data := []byte(`{
 		"roomName":"theroom",
 		"password":"swordfish"
   }`)
@@ -65,7 +66,7 @@ func TestParseNewControlledRoom(t *testing.T) {
 }
 
 func TestParseControllerAuth(t *testing.T) {
-	var data = []byte(`{
+	data := []byte(`{
 		"user":"me",
 		"room":"this",
 		"success":false
@@ -84,7 +85,7 @@ func TestParseControllerAuth(t *testing.T) {
 }
 
 func TestParseReady(t *testing.T) {
-	var data = []byte(`{
+	data := []byte(`{
 		"username":"maroka",
 		"isReady":true,
 		"manuallyInitiated":true
@@ -103,7 +104,7 @@ func TestParseReady(t *testing.T) {
 }
 
 func TestParsePlaylistIndex(t *testing.T) {
-	var data = []byte(`{
+	data := []byte(`{
 		"user":"maroka",
 		"index":42
 	}`)

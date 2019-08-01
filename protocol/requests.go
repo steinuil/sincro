@@ -35,37 +35,53 @@ func makeHello(user string, room string) hello {
 	}
 }
 
-func SendHello(user string, room string) ([]byte, error) {
-	return json.Marshal(makeHello(user, room))
+func SendHello(user string, room string) []byte {
+	out, err := json.Marshal(struct{ Hello hello }{Hello: makeHello(user, room)})
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
-func SendHelloAuth(user string, room string, password string) ([]byte, error) {
+func SendHelloAuth(user string, room string, password string) []byte {
 	sum := md5.Sum([]byte(password))
 
 	h := makeHello(user, room)
 	h.Password = hex.EncodeToString(sum[:])
 
-	return json.Marshal(struct{ Hello hello }{Hello: h})
+	out, err := json.Marshal(struct{ Hello hello }{Hello: h})
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
-func SendFile(file File) ([]byte, error) {
+func SendFile(file File) []byte {
 	type f struct {
 		File File `json:"file"`
 	}
 
-	return json.Marshal(struct{ Set f }{Set: f{
+	out, err := json.Marshal(struct{ Set f }{Set: f{
 		File: file,
 	}})
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
-func SwitchToRoom(room string) ([]byte, error) {
+func SwitchToRoom(room string) []byte {
 	type r struct {
 		Room roomName `json:"room"`
 	}
 
-	return json.Marshal(struct{ Set r }{Set: r{
+	out, err := json.Marshal(struct{ Set r }{Set: r{
 		Room: roomName{Name: room},
 	}})
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
 type roomPassword struct {
@@ -81,22 +97,30 @@ func genRoomPassword() string {
 	return ""
 }
 
-func RequestControlledRoom(room string) ([]byte, error) {
-	return json.Marshal(struct{ Set controllerAuth }{Set: controllerAuth{
+func RequestControlledRoom(room string) []byte {
+	out, err := json.Marshal(struct{ Set controllerAuth }{Set: controllerAuth{
 		ControllerAuth: roomPassword{
 			Room:     room,
 			Password: genRoomPassword(),
 		},
 	}})
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
-func ManageRoom(room string, password string) ([]byte, error) {
-	return json.Marshal(struct{ Set controllerAuth }{Set: controllerAuth{
+func ManageRoom(room string, password string) []byte {
+	out, err := json.Marshal(struct{ Set controllerAuth }{Set: controllerAuth{
 		ControllerAuth: roomPassword{
 			Room:     room,
 			Password: password,
 		},
 	}})
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
 type readyStatus struct {
@@ -108,25 +132,33 @@ type ready struct {
 	Ready readyStatus `json:"ready"`
 }
 
-func SetReady(isReady bool) ([]byte, error) {
-	return json.Marshal(struct{ Set ready }{Set: ready{
+func SetReady(isReady bool) []byte {
+	out, err := json.Marshal(struct{ Set ready }{Set: ready{
 		Ready: readyStatus{
 			IsReady:           isReady,
 			ManuallyInitiated: false,
 		},
 	}})
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
-func SetReadyManually(isReady bool) ([]byte, error) {
-	return json.Marshal(struct{ Set ready }{Set: ready{
+func SetReadyManually(isReady bool) []byte {
+	out, err := json.Marshal(struct{ Set ready }{Set: ready{
 		Ready: readyStatus{
 			IsReady:           isReady,
 			ManuallyInitiated: true,
 		},
 	}})
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
-func SetPlaylist(files []string) ([]byte, error) {
+func SetPlaylist(files []string) []byte {
 	type filesT struct {
 		Files []string `json:"files"`
 	}
@@ -135,14 +167,18 @@ func SetPlaylist(files []string) ([]byte, error) {
 		PlaylistChange filesT `json:"playlistChange"`
 	}
 
-	return json.Marshal(struct{ Set playlistChange }{Set: playlistChange{
+	out, err := json.Marshal(struct{ Set playlistChange }{Set: playlistChange{
 		PlaylistChange: filesT{
 			Files: files,
 		},
 	}})
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
-func SkipToPlaylistIndex(index int) ([]byte, error) {
+func SkipToPlaylistIndex(index int) []byte {
 	type indexT struct {
 		Index int `json:"index"`
 	}
@@ -151,29 +187,41 @@ func SkipToPlaylistIndex(index int) ([]byte, error) {
 		PlaylistIndex indexT `json:"playlistIndex"`
 	}
 
-	return json.Marshal(struct{ Set playlistIndex }{Set: playlistIndex{
+	out, err := json.Marshal(struct{ Set playlistIndex }{Set: playlistIndex{
 		PlaylistIndex: indexT{
 			Index: index,
 		},
 	}})
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
-func SetFeatures(features ClientFeatures) ([]byte, error) {
+func SetFeatures(features ClientFeatures) []byte {
 	type featuresT struct {
 		Features ClientFeatures `json:"features"`
 	}
 
-	return json.Marshal(struct{ Set featuresT }{Set: featuresT{
+	out, err := json.Marshal(struct{ Set featuresT }{Set: featuresT{
 		Features: features,
 	}})
+	if err != nil {
+		panic(err)
+	}
+	return out
 }
 
-func GetUsers() ([]byte, error) {
+func GetUsers() []byte {
 	type list struct {
 		List interface{}
 	}
 
-	return json.Marshal(list{
+	out, err := json.Marshal(list{
 		List: nil,
 	})
+	if err != nil {
+		panic(err)
+	}
+	return out
 }

@@ -4,6 +4,7 @@ type ServerFeatures struct {
 	Chat                 bool `json:"chat"`
 	IsolateRooms         bool `json:"isolateRooms"`
 	ManagedRooms         bool `json:"managedRooms"`
+	FeatureList          bool `json:"featureList,omitempty"`
 	Readiness            bool `json:"readiness"`
 	MaxChatMessageLength int  `json:"maxChatMessageLength"`
 	MaxUsernameLength    int  `json:"maxUsernameLength"`
@@ -62,6 +63,11 @@ type PlaylistIndex struct {
 	Index int    `json:"index"`
 }
 
+type PlaylistChange struct {
+	User  string   `json:"user"`
+	Files []string `json:"files"`
+}
+
 type userRoom struct {
 	User string
 	Room string
@@ -82,4 +88,15 @@ type UserFileChangeEvent struct {
 	User string
 	Room string
 	File File
+}
+
+type User struct {
+	User         string         `json:"user"`
+	Filename     string         `json:"file"`
+	IsReady      bool           `json:"isReady"`
+	IsController bool           `json:"controller"`
+	Features     ClientFeatures `json:"features"`
+}
+
+type State struct {
 }
