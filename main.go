@@ -34,6 +34,7 @@ func main() {
 			fmt.Printf("%v\n", string(line))
 		} else {
 			fmt.Printf("%#v\n", msg)
+			handleMessage(conn, msg)
 		}
 	}
 }

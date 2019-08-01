@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"sincro/protocol"
 )
@@ -8,6 +9,8 @@ import (
 func handleMessage(w io.Writer, msg interface{}) {
 	switch msg.(type) {
 	case protocol.Hello:
+		hello := msg.(protocol.Hello)
+		fmt.Println(hello.Motd)
 	case protocol.NewControlledRoom:
 	case protocol.ControllerAuth:
 	case protocol.Ready:
@@ -17,8 +20,9 @@ func handleMessage(w io.Writer, msg interface{}) {
 	case protocol.UserLeftEvent:
 	case protocol.UserJoinedEvent:
 	case protocol.UserFileChangeEvent:
-	case protocol.User[]:
+	case []protocol.User:
 	case protocol.State:
 	default:
+		return
 	}
 }
