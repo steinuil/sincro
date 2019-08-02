@@ -90,14 +90,19 @@ func parsePlaylistChange(data []byte) (PlaylistChange, error) {
 // TODO handle errors
 
 func parseFileChanged(file map[string]interface{}, user string, room string) (UserFileChangeEvent, error) {
+	var path string
+	if file["path"] != nil {
+		path = file["path"].(string)
+	}
+
 	out := UserFileChangeEvent{
 		User: user,
 		Room: room,
 		File: File{
 			Filename: file["name"].(string),
 			Duration: file["duration"].(float64),
-			Size:     file["size"].(int64),
-			Path:     file["path"].(string),
+			Size:     file["size"].(float64),
+			Path:     path,
 		},
 	}
 

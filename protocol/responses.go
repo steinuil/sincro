@@ -23,7 +23,7 @@ type ClientFeatures struct {
 type File struct {
 	Filename string  `json:"name"`
 	Duration float64 `json:"duration"`
-	Size     int64   `json:"size"`
+	Size     float64 `json:"size"`
 	Path     string  `json:"path,omitempty"`
 }
 
