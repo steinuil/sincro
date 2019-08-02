@@ -208,7 +208,8 @@ func parseList(data []byte) ([]User, error) {
 }
 
 type pingReq struct {
-	LatencyCalculation float64 `json:"latencyCalculation"`
+	LatencyCalculation       float64 `json:"latencyCalculation,omitempty"`
+	ClientLatencyCalculation float64 `json:"clientLatencyCalculation"`
 }
 
 type playstateReq struct {

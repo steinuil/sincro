@@ -31,9 +31,9 @@ func readLines(r io.Reader, out chan<- []byte) {
 
 				lineCopy := make([]byte, line.Len())
 				copy(lineCopy, line.Bytes())
-				line.Reset()
 
 				out <- lineCopy
+				line.Reset()
 
 				bufSlice = bufSlice[nl+2:]
 			} else {

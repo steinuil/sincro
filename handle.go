@@ -22,6 +22,9 @@ func handleMessage(w io.Writer, msg interface{}) {
 	case protocol.UserFileChangeEvent:
 	case []protocol.User:
 	case protocol.State:
+		state := protocol.SendState()
+		fmt.Printf("%s\n", string(state))
+		w.Write(state)
 	default:
 		return
 	}

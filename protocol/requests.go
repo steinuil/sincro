@@ -3,6 +3,7 @@ package protocol
 import "encoding/json"
 import "encoding/hex"
 import "crypto/md5"
+import "time"
 
 type roomName struct {
 	Name string `json:"name"`
@@ -233,7 +234,9 @@ func SendState() []byte {
 
 	out, err := json.Marshal(state{State: stateReq{
 		Playstate: playstateReq{},
-		Ping:      pingReq{},
+		Ping: pingReq{
+			ClientLatencyCalculation: float64(time.Now().UnixNano()) / 100000000,
+		},
 	}})
 	if err != nil {
 		panic(err)
