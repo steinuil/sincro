@@ -115,18 +115,18 @@ func parseEvent(ev map[string]interface{}, user string, room string) (interface{
 	}
 
 	if ev["joined"] != nil {
-		features := ev["features"].(map[string]bool)
+		features := ev["features"].(map[string]interface{})
 
 		out := UserJoinedEvent{
 			User:    user,
 			Room:    room,
 			Version: ev["version"].(string),
 			Features: ClientFeatures{
-				Chat:            features["chat"],
-				ManagedRooms:    features["managedRooms"],
-				FeatureList:     features["featureList"],
-				Readiness:       features["readiness"],
-				SharedPlaylists: features["sharedPlaylists"],
+				Chat:            features["chat"].(bool),
+				ManagedRooms:    features["managedRooms"].(bool),
+				FeatureList:     features["featureList"].(bool),
+				Readiness:       features["readiness"].(bool),
+				SharedPlaylists: features["sharedPlaylists"].(bool),
 			},
 		}
 
@@ -149,6 +149,7 @@ func parseFeatures(data []byte) (ServerFeatures, error) {
 
 func parseUser(data []byte) (interface{}, error) {
 	var dec map[string]map[string]interface{}
+	json.Unmarshal(data, &dec)
 
 	var user string
 
@@ -159,7 +160,7 @@ func parseUser(data []byte) (interface{}, error) {
 
 	info := dec[user]
 
-	room := info["room"].(map[string]string)["name"]
+	room := info["room"].(map[string]interface{})["name"].(string)
 
 	switch {
 	case info["file"] != nil:
@@ -216,7 +217,7 @@ type playstateReq struct {
 	Position  float64 `json:"position"`
 	DoSeek    bool    `json:"doSeek"`
 	IsPaused  bool    `json:"paused"`
-	SetByUser string  `json:"setBy"`
+	SetByUser *string `json:"setBy,omitempty"`
 }
 
 type stateReq struct {
@@ -236,7 +237,9 @@ func parseState(data []byte) (State, error) {
 	out.Position = resp.Playstate.Position
 	out.DoSeek = resp.Playstate.DoSeek
 	out.IsPaused = resp.Playstate.IsPaused
-	out.SetByUser = resp.Playstate.SetByUser
+	if resp.Playstate.SetByUser != nil {
+		out.SetByUser = *resp.Playstate.SetByUser
+	}
 	out.LatencyCalculation = resp.Ping.LatencyCalculation
 
 	return out, nil

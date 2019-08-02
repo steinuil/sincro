@@ -232,10 +232,14 @@ func SendState() []byte {
 		State stateReq
 	}
 
+	now := float64(time.Now().UnixNano()) / float64(time.Second.Nanoseconds())
+
 	out, err := json.Marshal(state{State: stateReq{
-		Playstate: playstateReq{},
+		Playstate: playstateReq{
+			IsPaused: true,
+		},
 		Ping: pingReq{
-			ClientLatencyCalculation: float64(time.Now().UnixNano()) / 100000000,
+			ClientLatencyCalculation: now,
 		},
 	}})
 	if err != nil {

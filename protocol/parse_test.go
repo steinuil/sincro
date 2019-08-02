@@ -119,3 +119,88 @@ func TestParsePlaylistIndex(t *testing.T) {
 		Index: 42,
 	})
 }
+
+func TestParseUser1(t *testing.T) {
+	data := []byte(`{
+		"maroka":{
+			"event":{"left":true},
+			"room":{"name":"testroom"}
+		}
+	}`)
+
+	n, err := parseUser(data)
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.DeepEqual(t, n, UserLeftEvent{
+		User: "maroka",
+		Room: "testroom",
+	})
+}
+
+func TestParseUser2(t *testing.T) {
+	data := []byte(`{
+		"maroka":{
+			"event":{
+				"joined": true,
+				"version": "1.6.4",
+				"features":{
+					"sharedPlaylists": true,
+					"managedRooms": true,
+					"readiness": true,
+					"featureList": true,
+					"chat": true
+				}
+			},
+			"room": {"name": "testroom"}
+		}
+	}`)
+
+	n, err := parseUser(data)
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.DeepEqual(t, n, UserJoinedEvent{
+		User:    "maroka",
+		Room:    "testroom",
+		Version: "1.6.4",
+		Features: ClientFeatures{
+			SharedPlaylists: true,
+			ManagedRooms:    true,
+			Readiness:       true,
+			FeatureList:     true,
+			Chat:            true,
+		},
+	})
+}
+
+func TestParseState(t *testing.T) {
+	data := []byte(`{
+		"ping":{
+			"serverRtt": 0,
+			"latencyCalculation": 1564749326.7353718,
+			"clientLatencyCalculation": 1564749327.5809891
+		},
+		"playstate":{
+			"position": 0,
+			"doSeek": false,
+			"paused": true,
+			"setBy": "maroka"
+		}
+	}`)
+
+	n, err := parseState(data)
+	if err != nil {
+		t.Error(err)
+	}
+
+	assert.DeepEqual(t, n, State{
+		LatencyCalculation: 1564749326.7353718,
+		Position:           0,
+		DoSeek:             false,
+		IsPaused:           true,
+		SetByUser:          "maroka",
+	})
+}
