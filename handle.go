@@ -5,9 +5,15 @@ import (
 	"sincro/protocol"
 )
 
-func handleMessage(w io.Writer, msg interface{}) {
+func handleMessage(w io.Writer, msg interface{}, state *SincroState) {
 	switch msg.(type) {
 	case protocol.Hello:
+		hello := msg.(protocol.Hello)
+		state.User = hello.User
+		state.Room = hello.Room
+
+		w.Write(protocol.GetUsers())
+		w.Write(protocol.Separator)
 	case protocol.NewControlledRoom:
 	case protocol.ControllerAuth:
 	case protocol.Ready:
@@ -19,9 +25,12 @@ func handleMessage(w io.Writer, msg interface{}) {
 	case protocol.UserFileChangeEvent:
 	case []protocol.User:
 	case protocol.State:
-		state := protocol.SendState()
-		w.Write(state)
-		w.Write([]byte("\r\n"))
+		serverState := msg.(protocol.State)
+		state.Position = serverState.Position
+		state.IsPaused = serverState.IsPaused
+
+		w.Write(protocol.SendState(state.Position, state.IsPaused, false, serverState.ServerIgnore))
+		w.Write(protocol.Separator)
 	default:
 		return
 	}

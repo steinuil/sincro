@@ -227,7 +227,7 @@ func GetUsers() []byte {
 	return out
 }
 
-func SendState() []byte {
+func SendState(position float64, isPaused bool, doSeek bool, serverIgnored int) []byte {
 	type state struct {
 		State stateReq
 	}
@@ -236,10 +236,13 @@ func SendState() []byte {
 
 	out, err := json.Marshal(state{State: stateReq{
 		Playstate: playstateReq{
-			IsPaused: true,
+			IsPaused: isPaused,
+			Position: position,
+			DoSeek:   doSeek,
 		},
 		Ping: pingReq{
 			ClientLatencyCalculation: now,
+			IgnoringOnTheFly:         serverIgnore{Server: serverIgnored},
 		},
 	}})
 	if err != nil {

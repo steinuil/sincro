@@ -10,13 +10,21 @@ import (
 func main() {
 	var err error
 
-	conn, err := net.Dial("tcp", "syncplay.pl:8996")
+	conn, err := net.Dial("tcp", ":8996")
 	if err != nil {
 		panic(err)
 	}
 
-	conn.Write(protocol.SendHello("steen", "badboys421"))
-	conn.Write([]byte("\r\n"))
+	state := SincroState{
+		User:     "steen",
+		Room:     "badboys421",
+		IsReady:  false,
+		IsPaused: true,
+		File:     File{},
+	}
+
+	conn.Write(protocol.SendHello(state.User, state.Room))
+	conn.Write(protocol.Separator)
 
 	lines := make(chan []byte)
 
@@ -34,7 +42,7 @@ func main() {
 			fmt.Printf("%v\n", string(line))
 		} else {
 			fmt.Printf("%#v\n", msg)
-			handleMessage(conn, msg)
+			handleMessage(conn, msg, &state)
 		}
 	}
 }

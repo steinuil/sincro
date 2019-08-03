@@ -104,4 +104,5 @@ type State struct {
 	IsPaused           bool
 	SetByUser          string
 	LatencyCalculation float64
+	ServerIgnore       int
 }

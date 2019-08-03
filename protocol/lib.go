@@ -2,6 +2,8 @@ package protocol
 
 import "encoding/json"
 
+var Separator = []byte("\r\n")
+
 func ParseMessage(data []byte) (interface{}, error) {
 	var out map[string]json.RawMessage
 
