@@ -214,13 +214,13 @@ func parseList(data []byte) ([]User, error) {
 }
 
 type serverIgnore struct {
-	Server int
+	Server int `json:"server"`
 }
 
 type pingReq struct {
-	LatencyCalculation       float64      `json:"latencyCalculation,omitempty"`
-	ClientLatencyCalculation float64      `json:"clientLatencyCalculation"`
-	IgnoringOnTheFly         serverIgnore `json:"ignoringOnTheFly,omitempty"`
+	LatencyCalculation       float64 `json:"latencyCalculation,omitempty"`
+	ClientLatencyCalculation float64 `json:"clientLatencyCalculation"`
+	ServerRtt                float64 `json:"serverRtt,omitempty"`
 }
 
 type playstateReq struct {
@@ -233,6 +233,7 @@ type playstateReq struct {
 type stateReq struct {
 	Ping      pingReq      `json:"ping"`
 	Playstate playstateReq `json:"playstate"`
+	Ignore    serverIgnore `json:"ignoringOnTheFly"`
 }
 
 func parseState(data []byte) (State, error) {
@@ -251,9 +252,8 @@ func parseState(data []byte) (State, error) {
 		out.SetByUser = *resp.Playstate.SetByUser
 	}
 	out.LatencyCalculation = resp.Ping.LatencyCalculation
-	if resp.Ping.IgnoringOnTheFly.Server > 0 {
-		out.ServerIgnore = resp.Ping.IgnoringOnTheFly.Server
-	}
+	out.ServerIgnore = resp.Ignore.Server
+	out.ServerRtt = resp.Ping.ServerRtt
 
 	return out, nil
 }

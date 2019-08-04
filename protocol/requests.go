@@ -242,8 +242,8 @@ func SendState(position float64, isPaused bool, doSeek bool, serverIgnored int) 
 		},
 		Ping: pingReq{
 			ClientLatencyCalculation: now,
-			IgnoringOnTheFly:         serverIgnore{Server: serverIgnored},
 		},
+		Ignore: serverIgnore{Server: serverIgnored},
 	}})
 	if err != nil {
 		panic(err)

@@ -179,7 +179,7 @@ func TestParseUser2(t *testing.T) {
 func TestParseState(t *testing.T) {
 	data := []byte(`{
 		"ping":{
-			"serverRtt": 0,
+			"serverRtt": 3.2,
 			"latencyCalculation": 1564749326.7353718,
 			"clientLatencyCalculation": 1564749327.5809891
 		},
@@ -188,7 +188,8 @@ func TestParseState(t *testing.T) {
 			"doSeek": false,
 			"paused": true,
 			"setBy": "maroka"
-		}
+		},
+		"ignoringOnTheFly":{"server": 1}
 	}`)
 
 	n, err := parseState(data)
@@ -202,5 +203,7 @@ func TestParseState(t *testing.T) {
 		DoSeek:             false,
 		IsPaused:           true,
 		SetByUser:          "maroka",
+		ServerIgnore:       1,
+		Latency:            3.2,
 	})
 }

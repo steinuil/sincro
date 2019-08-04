@@ -29,7 +29,9 @@ func handleMessage(w io.Writer, msg interface{}, state *SincroState) {
 		state.Position = serverState.Position
 		state.IsPaused = serverState.IsPaused
 
-		w.Write(protocol.SendState(state.Position, state.IsPaused, false, serverState.ServerIgnore))
+		position := state.Position + serverState.ServerRtt
+
+		w.Write(protocol.SendState(position, state.IsPaused, false, serverState.ServerIgnore))
 		w.Write(protocol.Separator)
 	default:
 		return

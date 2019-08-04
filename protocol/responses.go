@@ -105,4 +105,5 @@ type State struct {
 	SetByUser          string
 	LatencyCalculation float64
 	ServerIgnore       int
+	ServerRtt          float64
 }
