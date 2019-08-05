@@ -1,15 +1,15 @@
 package mpv
 
 import (
-	"net"
 	"time"
+	"io"
 
 	"github.com/Microsoft/go-winio"
 )
 
 const DefaultPipeName = `\\.\pipe\SincroMpvPipe`
 
-func Dial(path string) (net.Conn, error) {
+func Open(path string) (io.ReadWriteCloser, error) {
 	timeout := time.Second * 10
 
 	return winio.DialPipe(path, &timeout)

@@ -27,7 +27,7 @@ func main() {
 	conn.Write(protocol.SendHello(state.User, state.Room))
 	conn.Write(protocol.Separator)
 
-	_, err = mpv.Dial(mpv.DefaultPipeName)
+	_, err = mpv.Open(mpv.DefaultPipeName)
 	if err != nil {
 		panic(err)
 	}

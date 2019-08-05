@@ -2,10 +2,13 @@
 
 package mpv
 
-import "io"
+import (
+	"io"
+	"os"
+)
 
-const DefaultPipeName = `\\.\pipe\SincroMpvPipe`
+const DefaultPipeName = `/tmp/sincro-mpv-pipe`
 
-func Dial(path string) (io.Conn, error) {
-
+func Open(path string) (io.ReadWriteCloser, error) {
+	return os.OpenFile(path, os.O_RDWR, os.ModeNamedPipe)
 }
