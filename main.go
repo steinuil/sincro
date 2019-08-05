@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"sincro/mpv"
 	"sincro/protocol"
 	"time"
 )
@@ -25,6 +26,11 @@ func main() {
 
 	conn.Write(protocol.SendHello(state.User, state.Room))
 	conn.Write(protocol.Separator)
+
+	_, err = mpv.Dial(mpv.DefaultPipeName)
+	if err != nil {
+		panic(err)
+	}
 
 	lines := make(chan []byte)
 

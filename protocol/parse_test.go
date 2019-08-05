@@ -204,6 +204,6 @@ func TestParseState(t *testing.T) {
 		IsPaused:           true,
 		SetByUser:          "maroka",
 		ServerIgnore:       1,
-		Latency:            3.2,
+		ServerRtt:          3.2,
 	})
 }

@@ -29,7 +29,7 @@ type File struct {
 
 // "Hello" event
 
-// Hello: response to the Hello request
+// Hello response to the Hello request
 type Hello struct {
 	User     string
 	Version  string
