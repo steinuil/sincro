@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-func readLines(r io.Reader, out chan<- []byte) {
+func readLines(r io.Reader, out chan<- []byte, sep byte, sepLen int) {
 	buf := make([]byte, 128)
 	line := bytes.Buffer{}
 
@@ -24,7 +24,7 @@ func readLines(r io.Reader, out chan<- []byte) {
 		bufSlice := buf[:read]
 
 		for {
-			nl := bytes.IndexByte(bufSlice, '\r')
+			nl := bytes.IndexByte(bufSlice, sep)
 
 			if nl != -1 {
 				line.Write(bufSlice[:nl])
@@ -35,7 +35,7 @@ func readLines(r io.Reader, out chan<- []byte) {
 				out <- lineCopy
 				line.Reset()
 
-				bufSlice = bufSlice[nl+2:]
+				bufSlice = bufSlice[nl+sepLen:]
 			} else {
 				line.Write(bufSlice)
 				break

@@ -5,7 +5,7 @@ import (
 	"sincro/protocol"
 )
 
-func handleMessage(w io.Writer, msg interface{}, state *SincroState) {
+func handleSyncplay(w io.Writer, msg interface{}, state *SincroState) {
 	switch msg.(type) {
 	case protocol.Hello:
 		hello := msg.(protocol.Hello)

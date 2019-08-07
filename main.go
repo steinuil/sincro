@@ -34,7 +34,7 @@ func main() {
 
 	lines := make(chan []byte)
 
-	go readLines(conn, lines)
+	go readLines(conn, lines, '\r', 2)
 
 	for line := range lines {
 		time.Sleep(0)
@@ -48,7 +48,7 @@ func main() {
 			fmt.Printf("%v\n", string(line))
 		} else {
 			fmt.Printf("%#v\n", msg)
-			handleMessage(conn, msg, &state)
+			handleSyncplay(conn, msg, &state)
 		}
 	}
 }
