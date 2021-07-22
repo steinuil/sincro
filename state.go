@@ -6,6 +6,11 @@ type File protocol.File
 
 type User protocol.User
 
+type Playlist struct {
+	Files    []string
+	Position int
+}
+
 type SincroState struct {
 	User     string
 	Room     string
@@ -13,5 +18,6 @@ type SincroState struct {
 	IsPaused bool
 	Position float64
 	File     File
-	Users    []User
+	Playlist Playlist
+	Users    map[string]User
 }

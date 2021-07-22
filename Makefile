@@ -1,4 +1,4 @@
-pkgs = . ./protocol
+pkgs = . ./protocol ./mpv
 
 .PHONY: fmt
 fmt:

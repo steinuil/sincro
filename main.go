@@ -6,12 +6,14 @@ import (
 	"sincro/mpv"
 	"sincro/protocol"
 	"time"
+	"os"
+	"io"
 )
 
 func main() {
 	var err error
 
-	conn, err := net.Dial("tcp", ":8996")
+	conn, err := net.Dial("tcp", "syncplay.pl:8996")
 	if err != nil {
 		panic(err)
 	}
@@ -48,7 +50,7 @@ func main() {
 			fmt.Printf("%v\n", string(line))
 		} else {
 			fmt.Printf("%#v\n", msg)
-			handleSyncplay(conn, msg, &state)
+			handleSyncplay(io.MultiWriter(conn, os.Stdout), msg, &state)
 		}
 	}
 }

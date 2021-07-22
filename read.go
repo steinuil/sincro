@@ -26,20 +26,20 @@ func readLines(r io.Reader, out chan<- []byte, sep byte, sepLen int) {
 		for {
 			nl := bytes.IndexByte(bufSlice, sep)
 
-			if nl != -1 {
-				line.Write(bufSlice[:nl])
-
-				lineCopy := make([]byte, line.Len())
-				copy(lineCopy, line.Bytes())
-
-				out <- lineCopy
-				line.Reset()
-
-				bufSlice = bufSlice[nl+sepLen:]
-			} else {
+			if nl == -1 {
 				line.Write(bufSlice)
 				break
 			}
+
+			line.Write(bufSlice[:nl])
+
+			lineCopy := make([]byte, line.Len())
+			copy(lineCopy, line.Bytes())
+
+			out <- lineCopy
+			line.Reset()
+
+			bufSlice = bufSlice[nl+sepLen:]
 		}
 	}
 }
